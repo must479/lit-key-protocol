@@ -12,6 +12,9 @@ import { RPCError, createHandler } from 'rpc-utils'
 import type { HandlerMethods, RPCRequest, RPCResponse, SendRequestFunc } from 'rpc-utils'
 import * as u8a from 'uint8arrays'
 import elliptic from 'elliptic'
+import { fromString } from 'uint8arrays/from-string'
+import { toString } from 'uint8arrays/to-string'
+
 const EC = elliptic.ec;
 const ec = new EC('secp256k1')
 
@@ -81,6 +84,40 @@ const sign = async (
   return createJWS(typeof payload === 'string' ? payload : toStableObject(payload), signer, header)
 }
 
+/**
+ * @deprecated Signers will be expected to return base64url `string` signatures.
+ */
+ export interface EcdsaSignature {
+  r: string
+  s: string
+  recoveryParam?: number | null
+}
+
+
+export type Signer = (data: string | Uint8Array) => Promise<EcdsaSignature | string>
+
+// TODO: Copy code from your Lit Action SDK
+function ellipticSignerWithLit() {
+  return async (dataToSign: any) : Promise<any> => {
+    if(dataToSign == undefined) throw new Error('dataToSign');
+
+    return {}
+  }
+}
+
+const signWithLit = async (
+  payload: Record<string, any> | string,
+  did: string,
+  // secretKey: Uint8Array,
+  protectedHeader: Record<string, any> = {}
+) => {
+  const kid = `${did}#${did.split(':')[2]}`
+  const signer = ellipticSignerWithLit()
+  const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
+
+  return createJWS(typeof payload === 'string' ? payload : toStableObject(payload), signer, header)
+}
+
 const didMethods: HandlerMethods<Context, DIDProviderMethods> = {
   did_authenticate: async ({ did, secretKey }, params: AuthParams) => {
     const response = await sign(
@@ -130,6 +167,51 @@ export class Secp256k1Provider implements DIDProvider {
   }
 }
 
+export declare type DIDProviderMethodsWithLit = {
+  did_authenticate: {
+      params: AuthParams;
+      result: GeneralJWS;
+  };
+  // did_createJWS: {
+  //     params: CreateJWSParams;
+  //     result: {
+  //         jws: GeneralJWS;
+  //     };
+  // };
+  // did_decryptJWE: {
+  //     params: DecryptJWEParams;
+  //     result: {
+  //         cleartext: string;
+  //     };
+  // };
+};
+
+const didMethodsWithLit: HandlerMethods<LitContext, DIDProviderMethodsWithLit> = {
+  did_authenticate: async ({ did }, params: AuthParams) => {
+    const response = await signWithLit(
+      {
+        did,
+        aud: params.aud,
+        nonce: params.nonce,
+        paths: params.paths,
+        exp: Math.floor(Date.now() / 1000) + 600, // expires 10 min from now
+      },
+      did
+    )
+    return toGeneralJWS(response)
+  },
+  // did_createJWS: async ({ did, secretKey }, params: CreateJWSParams & { did: string }) => {
+  //   const requestDid = params.did.split('#')[0]
+  //   if (requestDid !== did) throw new RPCError(4100, `Unknown DID: ${did}`)
+  //   const jws = await sign(params.payload, did, secretKey, params.protected)
+  //   return { jws: toGeneralJWS(jws) }
+  // },
+  // did_decryptJWE: async () => {
+  //   // Not implemented
+  //   return { cleartext: '' }
+  // },
+}
+
 export class Secp256k1ProviderWithLit implements DIDProvider {
   _handle: SendRequestFunc<DIDProviderMethods>
 
@@ -137,8 +219,8 @@ export class Secp256k1ProviderWithLit implements DIDProvider {
 
     console.log('[key-did-provider-secp256k1] Class::Secp256k1ProviderWithLit');
 
-    const handler = createHandler<Context, DIDProviderMethods>(didMethods)
-    this._handle = async (msg) => await handler({ did: did, secretKey: new Uint8Array() }, msg)
+    const handler = createHandler<LitContext, DIDProviderMethodsWithLit>(didMethodsWithLit)
+    this._handle = async (msg) => await handler({ did }, msg)
   }
 
   get isDidProvider(): boolean {

@@ -9,7 +9,7 @@
   "homepage": "https://github.com/andyjagoe/key-did-provider-secp256k1",
   "bugs": {
     "url": "https://github.com/andyjagoe/key-did-provider-secp256k1/issues"
-  },  
+  },
   "author": "Andy Jagoe",
   "license": "(Apache-2.0 OR MIT)",
   "type": "module",
