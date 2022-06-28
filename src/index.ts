@@ -64,6 +64,9 @@ interface Context {
   did: string
   secretKey: Uint8Array
 }
+interface LitContext {
+  did: string
+}
 
 const sign = async (
   payload: Record<string, any> | string,
