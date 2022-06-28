@@ -29,6 +29,29 @@ export function encodeDID(publicKey: Uint8Array): string {
   return `did:key:z${u8a.toString(bytes, 'base58btc')}`
 }
 
+export function encodeDIDWithLit(publicKey: string): string {
+
+  console.log('[key-did-provider-secp256k1] encodeDIDWithLit()');
+
+  const pubBytes = ec
+  .keyFromPublic(publicKey, 'hex')
+  .getPublic(true, 'array');
+
+  console.log("[encodeDIDWithLit] pubBytes:", pubBytes)
+
+  const bytes = new Uint8Array(pubBytes.length + 2);
+  bytes[0] = 0xe7
+  bytes[1] = 0x01
+  bytes.set(pubBytes, 2)
+  console.log("[encodeDIDWithLit] bytes:", bytes)
+
+  const did = `did:key:z${u8a.toString(bytes, 'base58btc')}`;
+  console.log("[encodeDIDWithLit] did:", did)
+
+  return did;
+
+}
+
 function toGeneralJWS(jws: string): GeneralJWS {
   const [protectedHeader, payload, signature] = jws.split('.')
   return {
@@ -91,6 +114,28 @@ export class Secp256k1Provider implements DIDProvider {
 
     const handler = createHandler<Context, DIDProviderMethods>(didMethods)
     this._handle = async (msg) => await handler({ did, secretKey:seed }, msg)
+  }
+
+  get isDidProvider(): boolean {
+    return true
+  }
+
+  async send<Name extends DIDMethodName>(
+    msg: RPCRequest<DIDProviderMethods, Name>
+  ): Promise<RPCResponse<DIDProviderMethods, Name> | null> {
+    return await this._handle(msg)
+  }
+}
+
+export class Secp256k1ProviderWithLit implements DIDProvider {
+  _handle: SendRequestFunc<DIDProviderMethods>
+
+  constructor(did: string) {
+
+    console.log('[key-did-provider-secp256k1] Class::Secp256k1ProviderWithLit');
+
+    const handler = createHandler<Context, DIDProviderMethods>(didMethods)
+    this._handle = async (msg) => await handler({ did: did, secretKey: new Uint8Array() }, msg)
   }
 
   get isDidProvider(): boolean {
