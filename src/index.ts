@@ -151,10 +151,6 @@ export class Secp256k1Provider implements DIDProvider {
 // -                    WITH LIT                    -
 // --------------------------------------------------
 
-interface ContextWithLit {
-  did: string
-}
-
 const getPKPPublicKey = async () => {
 
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
@@ -165,9 +161,9 @@ const getPKPPublicKey = async () => {
 
   const signatures = await litNodeClient.executeJs({
     code: `
-        const go = async () => {
-          const toSign = [0];
-          const sigShare = await LitActions.signEcdsa({ toSign, keyId: 1, sigName: "sig1" });
+      const go = async () => {
+        const toSign = [];
+        const sigShare = await LitActions.signEcdsa({ toSign, keyId: 1, sigName: "sig1" });
       };
       go();
     `,
@@ -178,7 +174,7 @@ const getPKPPublicKey = async () => {
 
 }
 
-const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
+const litActionSignAndGetSignature = async (dataToSign: Uint8Array, param: Secp256k1ProviderWithLitContext) => {
 
 
   console.log("litActionSignAndGetSignature:", dataToSign);
@@ -187,20 +183,9 @@ const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
   if(dataToSign == undefined ) throw Error('dataToSign cannot be empty')
 
   // -- prepare
-  const DATA_TO_SIGN_IN_STRING = Array.from(dataToSign).toString();
+  // const DATA_TO_SIGN_IN_STRING = Array.from(dataToSign).toString();
   
-  const litCode = `
-    const go = async () => {
-
-        // this is the string "${dataToSign}" for testing
-        const toSign = [${DATA_TO_SIGN_IN_STRING}];
-        // this requests a signature share from the Lit Node
-        // the signature share will be automatically returned in the HTTP response from the node
-        const sigShare = await LitActions.signEcdsa({ toSign, keyId: 1, sigName: "sig1" });
-    };
-
-    go();
-  `;
+  const litCode = param.litCode(dataToSign);
 
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
 
@@ -242,7 +227,7 @@ export async function encodeDIDWithLit(): Promise<string> {
 
 }
 
-export function ES256KSignerWithLit(): Signer {
+export function ES256KSignerWithLit(param: Secp256k1ProviderWithLitContext): Signer {
 
   const recoverable = false;
 
@@ -250,7 +235,7 @@ export function ES256KSignerWithLit(): Signer {
 
     console.warn("ES256KSignerWithLit", sha256(data));
 
-    const singature = (await litActionSignAndGetSignature(sha256(data))).sig1;
+    const singature = (await litActionSignAndGetSignature(sha256(data), param)).sig1;
     
     // const { r, s, recoveryParam }: elliptic.ec.Signature = keyPair.sign(sha256(data))
     return toJose(
@@ -313,15 +298,15 @@ export declare type DIDProviderMethodsWithLit = {
 
 const signWithLit = async (
   payload: Record<string, any> | string,
-  did: string,
+  param: Secp256k1ProviderWithLitContext,
   protectedHeader: Record<string, any> = {}
 ) => {
 
   console.log("[key-did-provider-secp256k1] signWithLit:");
 
-  const kid = `${did}#${did.split(':')[2]}`
+  const kid = `${param.did}#${param.did.split(':')[2]}`
   
-  const signer = ES256KSignerWithLit();
+  const signer = ES256KSignerWithLit(param);
 
   console.log("[signWithLixt] signer:", signer);
   const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
@@ -330,8 +315,8 @@ const signWithLit = async (
   return createJWSWithLit(typeof payload === 'string' ? payload : toStableObject(payload), signer, header);
 }
 
-const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLit> = {
-  did_authenticate: async ({ did }, params: AuthParams) => {
+const didMethodsWithLit: HandlerMethods<Secp256k1ProviderWithLitContext, DIDProviderMethodsWithLit> = {
+  did_authenticate: async ({ did, litCode }, params: AuthParams) => {
     const response = await signWithLit(
       {
         did,
@@ -340,7 +325,10 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
         paths: params.paths,
         exp: Math.floor(Date.now() / 1000) + 600, // expires 10 min from now
       },
-      did
+      {
+        did,
+        litCode
+      }
     )
 
     console.log("didMethodsWithLit response:", response);
@@ -351,10 +339,13 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
 
     return general;
   },
-  did_createJWS: async ({ did }, params: CreateJWSParams & { did: string }) => {
+  did_createJWS: async ({ did, litCode }, params: CreateJWSParams & { did: string }) => {
     const requestDid = params.did.split('#')[0]
     if (requestDid !== did) throw new RPCError(4100, `Unknown DID: ${did}`)
-    const jws = await signWithLit(params.payload, did, params.protected)
+    const jws = await signWithLit(params.payload, {
+      did,
+      litCode
+    }, params.protected)
     return { jws: toGeneralJWS(jws) }
   },
   did_decryptJWE: async () => {
@@ -367,20 +358,25 @@ export declare type DIDMethodNameWithLit = keyof DIDProviderMethodsWithLit;
 
 export declare type DIDProviderWithLit = RPCConnection<DIDProviderMethodsWithLit>;
 
+interface Secp256k1ProviderWithLitContext {
+  did: string
+  litCode: Function
+}
+
 // 
 // Lit version of Secp256k1Provider without private key
 // 
 export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
   _handle: SendRequestFunc<DIDProviderMethodsWithLit>
 
-  constructor(did: string) {
+  constructor(param: Secp256k1ProviderWithLitContext) {
 
     console.log('[key-did-provider-secp256k1] Class::Secp256k1ProviderWithLit');
     
-    const handler = createHandler<ContextWithLit, DIDProviderMethodsWithLit>(didMethodsWithLit)
+    const handler = createHandler<Secp256k1ProviderWithLitContext, DIDProviderMethodsWithLit>(didMethodsWithLit)
     this._handle = async (msg) => {
       console.log('[key-did-provider-secp256k1] msg THIS2', msg);
-      const _handler = await handler({ did }, msg); 
+      const _handler = await handler(param, msg); 
       return _handler;
     }
   }
