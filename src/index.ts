@@ -1,4 +1,4 @@
-import { ES256KSigner, JWTHeader, JWTPayload } from 'did-jwt'
+import { JWTHeader, JWTPayload } from 'did-jwt'
 import type {
   AuthParams,
   CreateJWSParams,
@@ -13,36 +13,49 @@ import { RPCError, createHandler } from 'rpc-utils'
 import type { HandlerMethods, RPCRequest, RPCResponse, SendRequestFunc, RPCConnection } from 'rpc-utils'
 import * as u8a from 'uint8arrays'
 import elliptic from 'elliptic'
-import { fromString } from 'uint8arrays/from-string'
+// import { fromString } from 'uint8arrays/from-string'
 // import { toString } from 'uint8arrays/to-string'
 // import LitJsSdk from 'lit-js-sdk';
+
+const LitJsSdk = require('lit-js-sdk')
+console.log(LitJsSdk);
+
+const EC = elliptic.ec;
+const ec = new EC('secp256k1')
+
+// ----------
+
 export type SignerAlgorithm = (payload: string, signer: Signer) => Promise<string>
+
+// ---------- Interfaces & Types ----------
+
+// -- external
+/**
+ * @deprecated Signers will be expected to return base64url `string` signatures.
+ */
+ export interface EcdsaSignature {
+  r: string
+  s: string
+  recoveryParam?: number | null
+}
 
 export interface JWSCreationOptions {
   canonicalize?: boolean
 }
-export async function createJWS(
-  payload: string | Partial<JWTPayload>,
-  signer: Signer,
-  header: Partial<JWTHeader> = {},
-): Promise<string> {
 
-  console.log("PRIVATE KEY createJWS");
-  if (!header.alg) header.alg = 'ES256K'
-  const encodedPayload = typeof payload === 'string' ? payload : encodeSection(payload)
-  const signingInput: string = [encodeSection(header), encodedPayload].join('.')
+export type Signer = (data: string | Uint8Array) => Promise<EcdsaSignature | string>
 
-  const jwtSigner: SignerAlgorithm = SignerAlg(header.alg)
-  const signature: string = await jwtSigner(signingInput, signer)
-
-  console.log("JWS signature:", signature);
-
-  const joined = [signingInput, signature].join('.');
-
-  console.log("JWS joined:", joined);
-  return joined
+// -- local
+interface Context {
+  did: string
+  secretKey: Uint8Array
 }
+interface LitContext {
+  did: string
+}
+// ---------- Utils ----------
 
+// -- external
 export function toJose({ r, s, recoveryParam }: EcdsaSignature, recoverable?: boolean): string {
   const jose = new Uint8Array(recoverable ? 65 : 64)
   jose.set(u8a.fromString(r, 'base16'), 0)
@@ -76,41 +89,14 @@ export function fromJose(signature: string): { r: string; s: string; recoveryPar
   return { r, s, recoveryParam }
 }
 
-export function toSealed(ciphertext: string, tag: string): Uint8Array {
-  return u8a.concat([base64ToBytes(ciphertext), base64ToBytes(tag)])
-}
-
 export function leftpad(data: string, size = 64): string {
   if (data.length === size) return data
   return '0'.repeat(size - data.length) + data
 }
 
-const LitJsSdk = require('lit-js-sdk')
-console.log(LitJsSdk);
-
-const EC = elliptic.ec;
-const ec = new EC('secp256k1')
-
 function toStableObject(obj: Record<string, any>): Record<string, any> {
   return JSON.parse(stringify(obj)) as Record<string, any>
 }
-
-export function encodeDID(publicKey: Uint8Array): string {
-
-  console.log('[key-did-provider-secp256k1] encodeDID()');
-
-  console.log("[encodeDIDWithLit] PUBLIC KEY:", publicKey);
-
-  const bytes = new Uint8Array(publicKey.length + 2)
-  bytes[0] = 0xe7 // secp256k1 multicodec
-  // The multicodec is encoded as a varint so we need to add this.
-  // See js-multicodec for a general implementation
-  bytes[1] = 0x01
-  bytes.set(publicKey, 2)
-  return `did:key:z${u8a.toString(bytes, 'base58btc')}`
-}
-
-
 
 function toGeneralJWS(jws: string): GeneralJWS {
   const [protectedHeader, payload, signature] = jws.split('.')
@@ -120,12 +106,102 @@ function toGeneralJWS(jws: string): GeneralJWS {
   }
 }
 
-interface Context {
-  did: string
-  secretKey: Uint8Array
+export function hexToBytes(s: string): Uint8Array {
+  const input = s.startsWith('0x') ? s.substring(2) : s
+  return u8a.fromString(input.toLowerCase(), 'base16')
 }
-interface LitContext {
-  did: string
+
+// function extractPublicKeyBytes(pk: any): Uint8Array {
+//   return hexToBytes(
+//     ec
+//       .keyFromPublic({
+//         x: bytesToHex(base64ToBytes(pk.publicKeyJwk.x)),
+//         y: bytesToHex(base64ToBytes(pk.publicKeyJwk.y)),
+//       })
+//       .getPublic('hex')
+//   )
+// }
+
+export function bytesToBase64url(b: Uint8Array): string {
+  return u8a.toString(b, 'base64url')
+}
+
+export function encodeBase64url(s: string): string {
+  return bytesToBase64url(u8a.fromString(s))
+}
+
+
+function encodeSection(data: any): string {
+  return encodeBase64url(JSON.stringify(data))
+}
+
+interface SignerAlgorithms {
+  [alg: string]: SignerAlgorithm
+}
+
+function instanceOfEcdsaSignature(object: any): object is EcdsaSignature {
+  return typeof object === 'object' && 'r' in object && 's' in object
+}
+export function ES256KSignerAlg(recoverable?: boolean): SignerAlgorithm {
+  return async function sign(payload: string, signer: Signer): Promise<string> {
+    const signature: EcdsaSignature | string = await signer(payload)
+    if (instanceOfEcdsaSignature(signature)) {
+      return toJose(signature, recoverable)
+    } else {
+      if (recoverable && typeof fromJose(signature).recoveryParam === 'undefined') {
+        throw new Error(`not_supported: ES256K-R not supported when signer doesn't provide a recovery param`)
+      }
+      return signature
+    }
+  }
+}
+
+const algorithms: SignerAlgorithms = {
+  ES256K: ES256KSignerAlg(),
+}
+
+function SignerAlg(alg: string): SignerAlgorithm {
+  const impl: SignerAlgorithm = algorithms[alg]
+  if (!impl) throw new Error(`not_supported: Unsupported algorithm ${alg}`)
+  return impl
+}
+
+// ----- Private key approach functions
+export async function createJWS(
+  payload: string | Partial<JWTPayload>,
+  signer: Signer,
+  header: Partial<JWTHeader> = {},
+): Promise<string> {
+
+  console.log("PRIVATE KEY createJWS");
+  if (!header.alg) header.alg = 'ES256K'
+  const encodedPayload = typeof payload === 'string' ? payload : encodeSection(payload)
+  const signingInput: string = [encodeSection(header), encodedPayload].join('.')
+
+  const jwtSigner: SignerAlgorithm = SignerAlg(header.alg)
+  const signature: string = await jwtSigner(signingInput, signer)
+
+  console.log("JWS signature:", signature);
+
+  const joined = [signingInput, signature].join('.');
+
+  console.log("JWS joined:", joined);
+  return joined
+}
+
+export function encodeDID(publicKey: Uint8Array): string {
+
+  console.log('[key-did-provider-secp256k1] encodeDID()');
+
+  console.log("[encodeDID] PUBLIC KEY:", publicKey);
+
+  const bytes = new Uint8Array(publicKey.length + 2)
+  bytes[0] = 0xe7 // secp256k1 multicodec
+  // The multicodec is encoded as a varint so we need to add this.
+  // See js-multicodec for a general implementation
+  bytes[1] = 0x01
+  bytes.set(publicKey, 2)
+  return `did:key:z${u8a.toString(bytes, 'base58btc')}`
 }
 
 const sign = async (
@@ -151,17 +227,6 @@ const sign = async (
   return createJWS(typeof payload === 'string' ? payload : toStableObject(payload), signer, header)
 }
 
-/**
- * @deprecated Signers will be expected to return base64url `string` signatures.
- */
- export interface EcdsaSignature {
-  r: string
-  s: string
-  recoveryParam?: number | null
-}
-
-
-export type Signer = (data: string | Uint8Array) => Promise<EcdsaSignature | string>
 
 const didMethods: HandlerMethods<Context, DIDProviderMethods> = {
   did_authenticate: async ({ did, secretKey }, params: AuthParams) => {
@@ -221,13 +286,16 @@ export class Secp256k1Provider implements DIDProvider {
 // -                    WITH LIT                    -
 // --------------------------------------------------
 
-const litActionSignAndGetSignature = async (dataToSign: any) => {
+const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
+
+
+  console.log("litActionSignAndGetSignature:", dataToSign);
 
   //  -- validate
   if(dataToSign == undefined ) throw Error('dataToSign cannot be empty')
 
   // -- prepare
-  const DATA_TO_SIGN_IN_STRING = Array.from(fromString(dataToSign, 'utf8')).toString();
+  const DATA_TO_SIGN_IN_STRING = Array.from(dataToSign).toString();
   
   const litCode = `
     const go = async () => {
@@ -256,141 +324,81 @@ const litActionSignAndGetSignature = async (dataToSign: any) => {
   return signatures;
 }
 
-
-
-export function hexToBytes(s: string): Uint8Array {
-  const input = s.startsWith('0x') ? s.substring(2) : s
-  return u8a.fromString(input.toLowerCase(), 'base16')
+declare global {
+  interface Window {
+    signatureFromLitAction: LitActionSignature;
+  }
 }
-
-// function extractPublicKeyBytes(pk: any): Uint8Array {
-//   return hexToBytes(
-//     ec
-//       .keyFromPublic({
-//         x: bytesToHex(base64ToBytes(pk.publicKeyJwk.x)),
-//         y: bytesToHex(base64ToBytes(pk.publicKeyJwk.y)),
-//       })
-//       .getPublic('hex')
-//   )
-// }
 
 export async function encodeDIDWithLit(): Promise<string> {
 
   console.log('[key-did-provider-secp256k1] encodeDIDWithLit()');
 
-  const signatures = (await litActionSignAndGetSignature('0'));
+  const PKP_PUBLIC_KEY = (await litActionSignAndGetSignature(new Uint8Array())).sig1.publicKey;
 
-  const PKP_PUBLIC_KEY = signatures.sig1.publicKey;
+  // window.signatureFromLitAction = signatureFromLitAction;
+
+  // console.log("[encodeDIDWithLit] signatureFromLitAction:", JSON.stringify(signatureFromLitAction));
+
+  // const PKP_PUBLIC_KEY = signatureFromLitAction.publicKey;
 
   console.log("[encodeDIDWithLit] PKP_PUBLIC_KEY:", PKP_PUBLIC_KEY);
 
-  const pubBytes = ec
-  .keyFromPublic(PKP_PUBLIC_KEY, 'hex')
-  .getPublic(true, 'array');
+  const pubBytes = ec.keyFromPublic(PKP_PUBLIC_KEY, 'hex').getPublic(true, 'array');
+
+  // const arr = ec.keyFromPublic(PKP_PUBLIC_KEY, 'hex').inspect()
+  // console.warn("arr:", arr);
 
   console.log("[encodeDIDWithLit] pubBytes:", pubBytes)
 
+  // https://github.com/multiformats/multicodec/blob/master/table.csv
   const bytes = new Uint8Array(pubBytes.length + 2);
-  bytes[0] = 0xe7
-  bytes[1] = 0x01
+  bytes[0] = 0xe7 // <-- 0xe7 is a Secp256k1 public key (compressed)
+  bytes[1] = 0x01 // <-- 0x01 is a content identifier cidv1
   bytes.set(pubBytes, 2)
   console.log("[encodeDIDWithLit] bytes:", bytes)
 
   const did = `did:key:z${u8a.toString(bytes, 'base58btc')}`;
-  console.log("[encodeDIDWithLit] did:", did)
+  console.log(`%c[encodeDIDWithLit] did: "${did}"`, "background: red")
 
   return did;
 
 }
 
-// TODO: THIS should be able to verify
-// return secp256k1.keyFromPublic(pubBytes).verify(hash6, sigObj);
+interface LitActionSignature {
+  r: string,
+  s: string,
+  recid: number,
+}
 
-// Forked version of EllpiticSign using LitAction
-// 
-// It uses the ellpitic curve used in Bitcoin and Ethereum (secp256k1), also known as "The Bitcoin curve",
-// as defined in the Standards for Efficient Cryptography (SEC1)
-// https://www.cem.me/art/cryptoposters/secp256k1.png
-// @return { Function } signer 
-// 
-export function ellipticSignerWithLit() : Signer {
+export function ES256KSignerWithLit(): Signer {
 
-  console.log("[Function Called] ellipticSignerWithLit()");
+  const recoverable = false;
 
-  // 
-  // Return a signer function
-  // @param { String } dataToSign
-  // @return { Uint8Array } signature from lit node
-  // 
-  return async (dataToSign: string | Uint8Array): Promise<string> => {
+  // const privateKeyBytes: Uint8Array = privateKey
+  // if (privateKeyBytes.length !== 32) {
+  //   throw new Error(`bad_key: Invalid private key format. Expecting 32 bytes, but got ${privateKeyBytes.length}`)
+  // }
+  // const keyPair: elliptic.ec.KeyPair = ec.keyFromPrivate(privateKeyBytes)
 
-    // -- validate
-    if(dataToSign == undefined) throw new Error('dataToSign');
+  return async (data: string | Uint8Array): Promise<string> => {
 
-    // -- prepare
-    const signatures = await litActionSignAndGetSignature(dataToSign);
-    console.log("signatures:", signatures)
+    console.warn("ES256KSignerWithLit", sha256(data));
 
+    const singature = (await litActionSignAndGetSignature(sha256(data))).sig1;
     
-    const ecdsaSignature = toJose(
+    // const { r, s, recoveryParam }: elliptic.ec.Signature = keyPair.sign(sha256(data))
+    return toJose(
       {
-        r: leftpad(signatures.sig1.r.toString('hex')),
-        s: leftpad(signatures.sig1.s.toString('hex')),
-        recoveryParam: signatures.sig1.recid,
+        r: singature.r,
+        s: singature.s,
+        recoveryParam: singature.recid,
       },
-      false
+      recoverable
     )
-
-    console.log("ecdsaSignature:", ecdsaSignature);
-
-    return ecdsaSignature
-
   }
 }
 
-export function bytesToBase64url(b: Uint8Array): string {
-  return u8a.toString(b, 'base64url')
-}
-
-export function encodeBase64url(s: string): string {
-  return bytesToBase64url(u8a.fromString(s))
-}
-
-
-function encodeSection(data: any): string {
-  return encodeBase64url(JSON.stringify(data))
-}
-
-interface SignerAlgorithms {
-  [alg: string]: SignerAlgorithm
-}
-
-function instanceOfEcdsaSignature(object: any): object is EcdsaSignature {
-  return typeof object === 'object' && 'r' in object && 's' in object
-}
-export function ES256KSignerAlg(recoverable?: boolean): SignerAlgorithm {
-  return async function sign(payload: string, signer: Signer): Promise<string> {
-    const signature: EcdsaSignature | string = await signer(payload)
-    if (instanceOfEcdsaSignature(signature)) {
-      return toJose(signature, recoverable)
-    } else {
-      if (recoverable && typeof fromJose(signature).recoveryParam === 'undefined') {
-        throw new Error(`not_supported: ES256K-R not supported when signer doesn't provide a recovery param`)
-      }
-      return signature
-    }
-  }
-}
-
-const algorithms: SignerAlgorithms = {
-  ES256K: ES256KSignerAlg(),
-}
-
-function SignerAlg(alg: string): SignerAlgorithm {
-  const impl: SignerAlgorithm = algorithms[alg]
-  if (!impl) throw new Error(`not_supported: Unsupported algorithm ${alg}`)
-  return impl
-}
 
 export async function createJWS2(
   payload: string | Partial<JWTPayload>,
@@ -418,29 +426,7 @@ export async function createJWS2(
   return joined
 }
 
-const signWithLit = async (
-  payload: Record<string, any> | string,
-  did: string,
-  // secretKey: Uint8Array,
-  protectedHeader: Record<string, any> = {}
-) => {
 
-  console.log("[key-did-provider-secp256k1] signWithLit:");
-
-  const kid = `${did}#${did.split(':')[2]}`
-  const signer = ellipticSignerWithLit();
-
-  console.log("[signWithLixt] signer:", signer);
-  const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
-  console.log("header:", header)
-  const jws = createJWS2(typeof payload === 'string' ? payload : toStableObject(payload), signer, header);
-  
-  const test = await jws;
-
-  console.warn("signWithLit test:", test);
-
-  return jws;
-}
 
 export declare type DIDProviderMethodsWithLit = {
   did_authenticate: {
@@ -460,6 +446,59 @@ export declare type DIDProviderMethodsWithLit = {
   //     };
   // };
 };
+import { hash } from '@stablelib/sha256'
+export function sha256(payload: string | Uint8Array): Uint8Array {
+  const data = typeof payload === 'string' ? u8a.fromString(payload) : payload
+  return hash(data)
+}
+
+export function ES256KSigner(privateKey: Uint8Array, recoverable = false): Signer {
+  const privateKeyBytes: Uint8Array = privateKey
+  if (privateKeyBytes.length !== 32) {
+    throw new Error(`bad_key: Invalid private key format. Expecting 32 bytes, but got ${privateKeyBytes.length}`)
+  }
+  const keyPair: elliptic.ec.KeyPair = ec.keyFromPrivate(privateKeyBytes)
+
+  return async (data: string | Uint8Array): Promise<string> => {
+
+    console.warn("DATA:", data);
+
+    const { r, s, recoveryParam }: elliptic.ec.Signature = keyPair.sign(sha256(data))
+    return toJose(
+      {
+        r: leftpad(r.toString('hex')),
+        s: leftpad(s.toString('hex')),
+        recoveryParam,
+      },
+      recoverable
+    )
+  }
+}
+
+const signWithLit = async (
+  payload: Record<string, any> | string,
+  did: string,
+  // secretKey: Uint8Array,
+  protectedHeader: Record<string, any> = {}
+) => {
+
+  console.log("[key-did-provider-secp256k1] signWithLit:");
+
+  const kid = `${did}#${did.split(':')[2]}`
+  
+  const signer = ES256KSignerWithLit();
+
+  console.log("[signWithLixt] signer:", signer);
+  const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
+  console.log("header:", header)
+  const jws = createJWS2(typeof payload === 'string' ? payload : toStableObject(payload), signer, header);
+  
+  const test = await jws;
+
+  console.warn("signWithLit test:", test);
+
+  return jws;
+}
 
 const didMethodsWithLit: HandlerMethods<LitContext, DIDProviderMethodsWithLit> = {
   did_authenticate: async ({ did }, params: AuthParams) => {
