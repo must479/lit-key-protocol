@@ -264,7 +264,7 @@ export class Secp256k1Provider implements DIDProvider {
 
     const handler = createHandler<Context, DIDProviderMethods>(didMethods)
     this._handle = async (msg) => {
-      console.log('[key-did-provider-secp256k1] msg', msg);
+      console.log('[key-did-provider-secp256k1] msg THIS', msg);
       
       const _handler = await handler({ did, secretKey:seed }, msg);
       return _handler;
@@ -433,12 +433,12 @@ export declare type DIDProviderMethodsWithLit = {
       params: AuthParams;
       result: GeneralJWS;
   };
-  // did_createJWS: {
-  //     params: CreateJWSParams;
-  //     result: {
-  //         jws: GeneralJWS;
-  //     };
-  // };
+  did_createJWS: {
+      params: CreateJWSParams;
+      result: {
+          jws: GeneralJWS;
+      };
+  };
   // did_decryptJWE: {
   //     params: DecryptJWEParams;
   //     result: {
@@ -478,7 +478,6 @@ export function ES256KSigner(privateKey: Uint8Array, recoverable = false): Signe
 const signWithLit = async (
   payload: Record<string, any> | string,
   did: string,
-  // secretKey: Uint8Array,
   protectedHeader: Record<string, any> = {}
 ) => {
 
@@ -521,12 +520,12 @@ const didMethodsWithLit: HandlerMethods<LitContext, DIDProviderMethodsWithLit> =
 
     return general;
   },
-  // did_createJWS: async ({ did, secretKey }, params: CreateJWSParams & { did: string }) => {
-  //   const requestDid = params.did.split('#')[0]
-  //   if (requestDid !== did) throw new RPCError(4100, `Unknown DID: ${did}`)
-  //   const jws = await sign(params.payload, did, secretKey, params.protected)
-  //   return { jws: toGeneralJWS(jws) }
-  // },
+  did_createJWS: async ({ did }, params: CreateJWSParams & { did: string }) => {
+    const requestDid = params.did.split('#')[0]
+    if (requestDid !== did) throw new RPCError(4100, `Unknown DID: ${did}`)
+    const jws = await signWithLit(params.payload, did, params.protected)
+    return { jws: toGeneralJWS(jws) }
+  },
   // did_decryptJWE: async () => {
   //   // Not implemented
   //   return { cleartext: '' }
@@ -549,7 +548,7 @@ export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
     
     const handler = createHandler<LitContext, DIDProviderMethodsWithLit>(didMethodsWithLit)
     this._handle = async (msg) => {
-      console.log('[key-did-provider-secp256k1] msg', msg);
+      console.log('[key-did-provider-secp256k1] msg THIS2', msg);
       const _handler = await handler({ did }, msg); 
       return _handler;
     }
