@@ -51,7 +51,7 @@
   "dependencies": {
     "@types/elliptic": "^6.4.14",
     "canonicalize": "^1.0.8",
-    "did-jwt": "^6.2.0",
+    "did-jwt": "^6.0.0",
     "dids": "^3.0.0",
     "elliptic": "^6.5.4",
     "fast-json-stable-stringify": "^2.1.0",
