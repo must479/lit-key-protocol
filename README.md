@@ -16,6 +16,8 @@ import {
     Secp256k1ProviderWithLit 
 } from 'key-did-provider-secp256k1-with-lit';
 
+import { CeramicClient } from '@ceramicnetwork/http-client'
+import { TileDocument } from '@ceramicnetwork/stream-tile'
 import { getResolver } from 'key-did-resolver'
 import { DID } from 'dids'
 
@@ -36,7 +38,7 @@ console.log("DID:", did);
 const doc = await TileDocument.create(ceramic, 'Hola hola ¿Cómo estás?');
 console.log("Doc/StreamID:", doc.id.toString());
 
-// -- read 
+// -- read a ceramic stream
 var loadDoc = await TileDocument.load(ceramic, doc.id.toString());
 console.log("Specific doc:", loadDoc.content);
 ```
