@@ -1,32 +1,13 @@
 import * as u8a from 'uint8arrays'
-import { 
-    base64ToBytes,
-  } from 'did-jwt'
-
-import type {
-    GeneralJWS,
-} from 'dids'
-
+import { base64ToBytes } from 'did-jwt'
+import type { GeneralJWS } from 'dids'
 import stringify from 'fast-json-stable-stringify'
-
 import { hash } from '@stablelib/sha256'
+import { EcdsaSignature } from './interfaces'
 
 export function sha256(payload: string | Uint8Array): Uint8Array {
   const data = typeof payload === 'string' ? u8a.fromString(payload) : payload
   return hash(data)
-}
-
-/**
- * @deprecated Signers will be expected to return base64url `string` signatures.
- */
-export interface EcdsaSignature {
-    r: string
-    s: string
-    recoveryParam?: number | null
-}
-
-export interface JWSCreationOptions {
-    canonicalize?: boolean
 }
 
 export function bytesToBase64url(b: Uint8Array): string {
@@ -81,19 +62,17 @@ export function instanceOfEcdsaSignature(object: any): object is EcdsaSignature 
     return typeof object === 'object' && 'r' in object && 's' in object
 }
 
-const getInstanceType = (value: any) => {
-    if(value instanceof Object){
-        if(value.constructor.name == 'Object'){
-            return 'Object';
-        }
-        return value.constructor.name;
-    }
-    return typeof value;
-}
-
 export function log(name: string, value: any, printObj: boolean = false){
     
-    const instanceType = getInstanceType(value);
+    const instanceType = (value: any) => {
+        if(value instanceof Object){
+            if(value.constructor.name == 'Object'){
+                return 'Object';
+            }
+            return value.constructor.name;
+        }
+        return typeof value;
+    };
 
     let text : string;
 
