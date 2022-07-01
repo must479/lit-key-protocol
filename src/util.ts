@@ -62,17 +62,19 @@ export function instanceOfEcdsaSignature(object: any): object is EcdsaSignature 
     return typeof object === 'object' && 'r' in object && 's' in object
 }
 
+export function getInstanceType (value: any){
+    if(value instanceof Object){
+        if(value.constructor.name == 'Object'){
+            return 'Object';
+        }
+        return value.constructor.name;
+    }
+    return typeof value;
+};
+
 export function log(name: string, value: any, printObj: boolean = false){
     
-    const instanceType = (value: any) => {
-        if(value instanceof Object){
-            if(value.constructor.name == 'Object'){
-                return 'Object';
-            }
-            return value.constructor.name;
-        }
-        return typeof value;
-    };
+    const instanceType = getInstanceType(value);
 
     let text : string;
 

@@ -71,6 +71,8 @@ const litActionSignAndGetSignature = async (dataToSign: Uint8Array, jsParams :Li
 
   await litNodeClient.connect();
 
+
+  log("[litActionSignAndGetSignature] jsParams:", jsParams, true);
   const signatures = await litNodeClient.executeJs({
     code,
     authSig,
@@ -125,7 +127,8 @@ export function ES256KSignerWithLit(jsParams: LitActionParams): Signer {
 
   return async (data: string | Uint8Array): Promise<string> => {
     
-    log("ES256KSignerWithLit:", sha256(data));
+    log("[ES256KSignerWithLit]:", sha256(data));
+    log("[ES256KSignerWithLit] jsParams:", jsParams, true);
 
     const signature = (await litActionSignAndGetSignature(sha256(data), jsParams)).sig1;
 
@@ -231,11 +234,12 @@ export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
   _handle: SendRequestFunc<DIDProviderMethodsWithLit>;
 
   constructor(did: string, jsParams: LitActionParams) {
+
+    log("[Secp256k1ProviderWithLit] jsParams:", jsParams, true)
     const handler = createHandler<ContextWithLit, DIDProviderMethodsWithLit>(
       didMethodsWithLit
     );
     this._handle = async (msg) => {
-      log("[Secp256k1ProviderWithLit] this._handle(msg):", msg);
       const _handler = await handler({ did, jsParams}, msg);
       return _handler;
     };
