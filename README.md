@@ -8,7 +8,7 @@ This a a DID provider which integrated Lit Actions x PKP powered by Lit Protocol
 
 - The `DID` tha we got is then passed into a resolver, which would allow us run methods such as `did.authenticate()`
 
-- 
+- To authenticate, instead of providing a `PRIVATE_KEY` to sign a message to verify the signature from the signed message is indeed matches the coressponding `PUBLIC_KEY`, we will ask the Lit nodes, who holds the `PRIVATE_KEY` collectively of the `PKP` NFT, to execute some `JS` code and use the output signature to verify
 
 ## Installation
 

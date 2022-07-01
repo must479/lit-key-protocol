@@ -270,13 +270,21 @@ const signWithLit = async (
   protectedHeader: Record<string, any> = {}
 ) => {
 
+  log("[signWithLit] did:", did);
+
   const kid = `${did}#${did.split(':')[2]}`
+
+  log("[signWithLit] kid:", kid);
   
   const signer = ES256KSignerWithLit();
 
-  log("[signWithLixt] signer:", signer);
+  log("[signWithLit] signer:", signer);
+  
   const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
+
   log("[signWithLit] header:", header)
+
+  log("[signWithLit] payload:", payload)
 
   return createJWS(typeof payload === 'string' ? payload : toStableObject(payload), signer, header);
 }
@@ -306,6 +314,9 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
     const requestDid = params.did.split('#')[0]
     if (requestDid !== did) throw new RPCError(4100, `Unknown DID: ${did}`)
     const jws = await signWithLit(params.payload, did, params.protected)
+
+    log("[did_createJWS] jws:", jws)
+
     return { jws: toGeneralJWS(jws) }
   },
   did_decryptJWE: async () => {
