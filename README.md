@@ -2,6 +2,14 @@
 
 This a a DID provider which integrated Lit Actions x PKP powered by Lit Protocol for `did:key` using secp256k1. It does not support encryption / JWE. It's a fork from [symfoni/key-did-provider-secp256k1](https://github.com/symfoni/key-did-provider-secp256k1) and was designed to be used with [Ceramic Network](https://ceramic.network/).
 
+## What it does?
+
+- Instead of manually providing a `PUBLIC_KEY` to get the `DID` (decentralised identifier), this SDK gets its `PUBLIC_KEY` from the `PKP` NFT, in which can only be retrieved when a user signs an auth message with their web3 wallet (eg. Metamask).
+
+- The `DID` tha we got is then passed into a resolver, which would allow us run methods such as `did.authenticate()`
+
+- 
+
 ## Installation
 
 ```

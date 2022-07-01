@@ -1,6 +1,4 @@
 import { 
-  JWTHeader, 
-  JWTPayload,
   ES256KSigner,
   Signer,
   createJWS
@@ -17,9 +15,6 @@ import type {
 } from 'dids'
 
 import { 
-  encodeSection, 
-  SignerAlg, 
-  SignerAlgorithm, 
   toGeneralJWS, 
   toJose, 
   toStableObject,
@@ -249,32 +244,6 @@ export function ES256KSignerWithLit(): Signer {
   }
 }
 
-
-export async function createJWSWithLit(
-  payload: string | Partial<JWTPayload>,
-  signer: Signer,
-  header: Partial<JWTHeader> = {}
-): Promise<string> {
-
-  if (!header.alg) header.alg = 'ES256K'
-  
-  const encodedPayload = typeof payload === 'string' ? payload : encodeSection(payload)
-  
-  const signingInput: string = [encodeSection(header), encodedPayload].join('.')
-
-  const jwtSigner: SignerAlgorithm = SignerAlg(header.alg)
-  
-  const signature: string = await jwtSigner(signingInput, signer)
-
-  log("[createJWSWithLit] signature:", signature);
-  
-  const JWS = [signingInput, signature].join('.');
-  
-  log("[createJWSWithLit] JWS:", JWS)
-  
-  return JWS
-}
-
 export declare type DIDProviderMethodsWithLit = {
   did_authenticate: {
       params: AuthParams;
@@ -309,7 +278,7 @@ const signWithLit = async (
   const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
   log("[signWithLit] header:", header)
 
-  return createJWSWithLit(typeof payload === 'string' ? payload : toStableObject(payload), signer, header);
+  return createJWS(typeof payload === 'string' ? payload : toStableObject(payload), signer, header);
 }
 
 const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLit> = {

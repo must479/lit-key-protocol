@@ -1,6 +1,5 @@
 import * as u8a from 'uint8arrays'
 import { 
-    Signer,
     base64ToBytes,
   } from 'did-jwt'
 
@@ -30,22 +29,12 @@ export interface JWSCreationOptions {
     canonicalize?: boolean
 }
 
-export type SignerAlgorithm = (payload: string, signer: Signer) => Promise<string>
-
-
-export interface SignerAlgorithms {
-    [alg: string]: SignerAlgorithm
-}
 export function bytesToBase64url(b: Uint8Array): string {
     return u8a.toString(b, 'base64url')
 }
 
 export function encodeBase64url(s: string): string {
     return bytesToBase64url(u8a.fromString(s))
-}
-
-export function encodeSection(data: any): string {
-    return encodeBase64url(JSON.stringify(data))
 }
 
 export function bytesToHex(b: Uint8Array): string {
@@ -90,30 +79,6 @@ export function fromJose(signature: string): { r: string; s: string; recoveryPar
 
 export function instanceOfEcdsaSignature(object: any): object is EcdsaSignature {
     return typeof object === 'object' && 'r' in object && 's' in object
-}
-
-export function ES256KSignerAlg(recoverable?: boolean): SignerAlgorithm {
-    return async function sign(payload: string, signer: Signer): Promise<string> {
-        const signature: EcdsaSignature | string = await signer(payload)
-        if (instanceOfEcdsaSignature(signature)) {
-        return toJose(signature, recoverable)
-        } else {
-        if (recoverable && typeof fromJose(signature).recoveryParam === 'undefined') {
-            throw new Error(`not_supported: ES256K-R not supported when signer doesn't provide a recovery param`)
-        }
-        return signature
-        }
-    }
-}
-  
-export const algorithms: SignerAlgorithms = {
-    ES256K: ES256KSignerAlg(),
-}
-
-export function SignerAlg(alg: string): SignerAlgorithm {
-    const impl: SignerAlgorithm = algorithms[alg]
-    if (!impl) throw new Error(`not_supported: Unsupported algorithm ${alg}`)
-    return impl
 }
 
 const getInstanceType = (value: any) => {
