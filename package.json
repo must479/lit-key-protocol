@@ -1,6 +1,6 @@
 {
   "name": "key-did-provider-secp256k1-with-lit",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "secp256k1 key did provider",
   "repository": {
     "type": "git",
