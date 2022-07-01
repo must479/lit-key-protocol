@@ -3927,9 +3927,10 @@ lit-connect-modal@^0.1.8:
   dependencies:
     micromodal "^0.4.10"
 
-"lit-js-sdk@https://github.com/LIT-Protocol/lit-js-sdk.git#serrano":
+lit-js-sdk@^1.2.0:
   version "1.2.0"
-  resolved "https://github.com/LIT-Protocol/lit-js-sdk.git#a2d963af419211f2de8c28406e5ae9fea8f45c89"
+  resolved "https://registry.yarnpkg.com/lit-js-sdk/-/lit-js-sdk-1.2.0.tgz#03f2eb57759d84d8c56c2e9f247a1a6d61924dd6"
+  integrity sha512-jjChqfVbffDrFwSWNplGxoSSoUjaEJTrJFkDW2IJHRFiAzAxnEf6UKhEs0IFZ9hQ+dU/7jKQoe8bWY1+rHBsLg==
   dependencies:
     "@ethersproject/bytes" "^5.5.0"
     "@ethersproject/contracts" "^5.2.0"

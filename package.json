@@ -35,7 +35,8 @@
     "clean": "rm -rf ./dist",
     "size": "./node_modules/.bin/size-limit",
     "analyze": "./node_modules/.bin/size-limit --why",
-    "pub": "yarn build && yalc publish"
+    "pub": "yarn build && yalc publish --push",
+    "dev": "nodemon -i dist -x \"yarn pub\""
   },
   "module": "./dist/key-did-provider-secp256k1.esm.js",
   "devDependencies": {
@@ -57,7 +58,7 @@
     "elliptic": "^6.5.4",
     "fast-json-stable-stringify": "^2.1.0",
     "global": "^4.4.0",
-    "lit-js-sdk": "https://github.com/LIT-Protocol/lit-js-sdk.git#serrano",
+    "lit-js-sdk": "^1.2.0",
     "rpc-utils": "^0.6.2",
     "uint8arrays": "^3.0.0",
     "watch": "^1.0.2"
