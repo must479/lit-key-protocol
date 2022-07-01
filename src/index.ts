@@ -218,14 +218,15 @@ export function ES256KSignerWithLit(): Signer {
   return async (data: string | Uint8Array): Promise<string> => {
     log("ES256KSignerWithLit:", sha256(data));
 
-    const singature = (await litActionSignAndGetSignature(sha256(data))).sig1;
+    const signature = (await litActionSignAndGetSignature(sha256(data))).sig1;
+    // log("ES256KSignerWithLit signature:", signature);
 
     // const { r, s, recoveryParam }: elliptic.ec.Signature = keyPair.sign(sha256(data))
     return toJose(
       {
-        r: singature.r,
-        s: singature.s,
-        recoveryParam: singature.recid,
+        r: signature.r,
+        s: signature.s,
+        recoveryParam: signature.recid,
       },
       recoverable
     );
