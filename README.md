@@ -14,8 +14,15 @@ This a a DID provider which integrated Lit Actions x PKP powered by Lit Protocol
 
 ## Installation
 
+It's not published yet, so you will have to clone this repo, and do something like:
+
 ```
-yarn add key-did-provider-secp256k1-with-lit
+// yarn
+yarn link
+
+// and in your project
+yarn link "key-did-provider-secp256k1-with-lit"
+
 ```
 
 ## Usage
