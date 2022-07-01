@@ -4,7 +4,7 @@ This a a DID provider which integrated Lit Actions x PKP powered by Lit Protocol
 
 ## What it does?
 
-- Instead of manually providing a `PUBLIC_KEY` to get the `DID` (decentralised identifier), this SDK gets its `PUBLIC_KEY` from the `PKP` NFT, which can only be retrieved when a user signs an auth message with their web3 wallet (eg. Metamask).
+- Instead of manually providing a `PUBLIC_KEY` to get the `DID` (decentralised identifier), this SDK gets the `PUBLIC_KEY` from the `PKP` NFT (..from?)
 
 - The `DID` tha we got is then passed into a resolver, which would allow us to run methods such as `did.authenticate()`.
 
