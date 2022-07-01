@@ -115,3 +115,36 @@ export function SignerAlg(alg: string): SignerAlgorithm {
     if (!impl) throw new Error(`not_supported: Unsupported algorithm ${alg}`)
     return impl
 }
+
+const getInstanceType = (value: any) => {
+    if(value instanceof Object){
+        if(value.constructor.name == 'Object'){
+            return 'Object';
+        }
+        return value.constructor.name;
+    }
+    return typeof value;
+}
+
+export function log(name: string, value: any, printObj: boolean = false){
+    
+    const instanceType = getInstanceType(value);
+
+    let text : string;
+
+    try{
+        text = JSON.stringify(value);
+    }catch(e){
+        text = '';
+    }
+
+    if( printObj == false){
+        console.log(`%c[key-did-provider-secp256k1]: ${name}${instanceType != null ? `(${instanceType})` : ''} "${text}"`, "color: #FF79C6");
+        return;
+    }
+
+    console.log(`%c[key-did-provider-secp256k1]: ${name}${instanceType != null ? `(${instanceType})` : ''}`, "color: #FF79C6");
+
+    console.log(value);
+
+}

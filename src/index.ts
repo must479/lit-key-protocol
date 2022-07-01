@@ -3,7 +3,6 @@ import {
   JWTPayload,
   ES256KSigner,
   Signer,
-
   createJWS
 } from 'did-jwt'
 
@@ -23,7 +22,9 @@ import {
   SignerAlgorithm, 
   toGeneralJWS, 
   toJose, 
-  toStableObject 
+  toStableObject,
+  sha256,
+  log
 } from './util'
 
 import type { 
@@ -41,10 +42,9 @@ import {
 
 import * as u8a from 'uint8arrays'
 import elliptic from 'elliptic'
-import { sha256 } from './util'
 
 const LitJsSdk = require('lit-js-sdk')
-console.log(LitJsSdk);
+log("LitJsSdk:", LitJsSdk, true);
 
 const EC = elliptic.ec;
 const ec = new EC('secp256k1')
@@ -55,10 +55,6 @@ interface Context {
 }
 
 export function encodeDID(publicKey: Uint8Array): string {
-
-  console.log('[key-did-provider-secp256k1] encodeDID()');
-
-  console.log("[encodeDID] PUBLIC KEY:", publicKey);
 
   const bytes = new Uint8Array(publicKey.length + 2)
   bytes[0] = 0xe7 // secp256k1 multicodec
@@ -76,16 +72,10 @@ const sign = async (
   protectedHeader: Record<string, any> = {}
 ) => {
 
-  console.log("[key-did-provider-secp256k1] sign:");
-  console.log("payload:", payload);
-  console.log("did:", did);
-  console.log("secretKey:", secretKey);
-  console.log("protectedHeader:", protectedHeader);
-
   const kid = `${did}#${did.split(':')[2]}`
   const signer = ES256KSigner(secretKey)
 
-  console.log(signer);
+  log("signer:", signer);
 
   const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
 
@@ -128,9 +118,7 @@ export class Secp256k1Provider implements DIDProvider {
     const did = encodeDID(Uint8Array.from(publicKey))
 
     const handler = createHandler<Context, DIDProviderMethods>(didMethods)
-    this._handle = async (msg) => {
-      console.log('[key-did-provider-secp256k1] msg THIS', msg);
-      
+    this._handle = async (msg) => {      
       const _handler = await handler({ did, secretKey:seed }, msg);
       return _handler;
     }
@@ -180,8 +168,7 @@ const getPKPPublicKey = async () => {
 
 const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
 
-
-  console.log("litActionSignAndGetSignature:", dataToSign);
+  log("litActionSignAndGetSignature:", dataToSign)
 
   //  -- validate
   if(dataToSign == undefined ) throw Error('dataToSign cannot be empty')
@@ -218,25 +205,23 @@ const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
 
 export async function encodeDIDWithLit(): Promise<string> {
 
-  console.log('[key-did-provider-secp256k1] encodeDIDWithLit()');
-
   const PKP_PUBLIC_KEY = await getPKPPublicKey();
 
-  console.log("[encodeDIDWithLit] PKP_PUBLIC_KEY:", PKP_PUBLIC_KEY);
+  log("[encodeDIDWithLit] PKP_PUBLIC_KEY:", PKP_PUBLIC_KEY);
 
   const pubBytes = ec.keyFromPublic(PKP_PUBLIC_KEY, 'hex').getPublic(true, 'array');
 
-  console.log("[encodeDIDWithLit] pubBytes:", pubBytes)
+  log("[encodeDIDWithLit] pubBytes:", pubBytes)
 
   // https://github.com/multiformats/multicodec/blob/master/table.csv
   const bytes = new Uint8Array(pubBytes.length + 2);
   bytes[0] = 0xe7 // <-- 0xe7 is a Secp256k1 public key (compressed)
   bytes[1] = 0x01 // <-- 0x01 is a content identifier cidv1
   bytes.set(pubBytes, 2)
-  console.log("[encodeDIDWithLit] bytes:", bytes)
+  log("[encodeDIDWithLit] bytes:", bytes)
 
   const did = `did:key:z${u8a.toString(bytes, 'base58btc')}`;
-  console.log(`%c[encodeDIDWithLit] did: "${did}"`, "color: #FF79C6")
+  log(`[encodeDIDWithLit] did:`, did)
 
   return did;
 
@@ -248,7 +233,7 @@ export function ES256KSignerWithLit(): Signer {
 
   return async (data: string | Uint8Array): Promise<string> => {
 
-    console.warn("ES256KSignerWithLit", sha256(data));
+    log("ES256KSignerWithLit:", sha256(data))
 
     const singature = (await litActionSignAndGetSignature(sha256(data))).sig1;
     
@@ -271,7 +256,6 @@ export async function createJWSWithLit(
   header: Partial<JWTHeader> = {}
 ): Promise<string> {
 
-  console.log("LIT: createJWSWithLit");
   if (!header.alg) header.alg = 'ES256K'
   
   const encodedPayload = typeof payload === 'string' ? payload : encodeSection(payload)
@@ -282,11 +266,11 @@ export async function createJWSWithLit(
   
   const signature: string = await jwtSigner(signingInput, signer)
 
-  console.log("createJWSWithLit signature:", signature);
+  log("[createJWSWithLit] signature:", signature);
   
   const JWS = [signingInput, signature].join('.');
   
-  console.log(`%cJWS:${JWS}`, 'color: #FF79C6');
+  log("[createJWSWithLit] JWS:", JWS)
   
   return JWS
 }
@@ -317,15 +301,13 @@ const signWithLit = async (
   protectedHeader: Record<string, any> = {}
 ) => {
 
-  console.log("[key-did-provider-secp256k1] signWithLit:");
-
   const kid = `${did}#${did.split(':')[2]}`
   
   const signer = ES256KSignerWithLit();
 
-  console.log("[signWithLixt] signer:", signer);
+  log("[signWithLixt] signer:", signer);
   const header = toStableObject(Object.assign(protectedHeader, { kid, alg: 'ES256K' }))
-  console.log("header:", header)
+  log("[signWithLit] header:", header)
 
   return createJWSWithLit(typeof payload === 'string' ? payload : toStableObject(payload), signer, header);
 }
@@ -343,11 +325,11 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
       did
     )
 
-    console.log("didMethodsWithLit response:", response);
+    log("[didMethodsWithLit] response:", response);
     
     const general = toGeneralJWS(response);
 
-    console.log("didMethodsWithLit general:", general);
+    log("[didMethodsWithLit] general:", general);
 
     return general;
   },
@@ -374,12 +356,10 @@ export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
   _handle: SendRequestFunc<DIDProviderMethodsWithLit>
 
   constructor(did: string) {
-
-    console.log('[key-did-provider-secp256k1] Class::Secp256k1ProviderWithLit');
     
     const handler = createHandler<ContextWithLit, DIDProviderMethodsWithLit>(didMethodsWithLit)
     this._handle = async (msg) => {
-      console.log('[key-did-provider-secp256k1] msg THIS2', msg);
+      log('[Secp256k1ProviderWithLit] this._handle(msg):', msg);
       const _handler = await handler({ did }, msg); 
       return _handler;
     }

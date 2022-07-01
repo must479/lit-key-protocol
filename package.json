@@ -1,6 +1,6 @@
 {
   "name": "key-did-provider-secp256k1-with-lit",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "secp256k1 key did provider",
   "repository": {
     "type": "git",
@@ -34,7 +34,8 @@
     "lint": "./node_modules/.bin/eslint ./src --ext .js,.ts",
     "clean": "rm -rf ./dist",
     "size": "./node_modules/.bin/size-limit",
-    "analyze": "./node_modules/.bin/size-limit --why"
+    "analyze": "./node_modules/.bin/size-limit --why",
+    "pub": "yarn build && yalc publish"
   },
   "module": "./dist/key-did-provider-secp256k1.esm.js",
   "devDependencies": {
@@ -56,7 +57,7 @@
     "elliptic": "^6.5.4",
     "fast-json-stable-stringify": "^2.1.0",
     "global": "^4.4.0",
-    "lit-js-sdk": "file:.yalc/lit-js-sdk",
+    "lit-js-sdk": "https://github.com/LIT-Protocol/lit-js-sdk.git#serrano",
     "rpc-utils": "^0.6.2",
     "uint8arrays": "^3.0.0",
     "watch": "^1.0.2"
