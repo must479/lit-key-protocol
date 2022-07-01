@@ -1,33 +1,44 @@
-# secp256k1 key did provider
-This is a DID Provider which implements [EIP2844](https://eips.ethereum.org/EIPS/eip-2844) for `did:key:` using secp256k1. It does not support encryption / JWE. It is based on [key-did-provider-ed25519](https://github.com/ceramicnetwork/key-did-provider-ed25519) and was designed to be used with [Ceramic](https://ceramic.network/).
+# secp256k1 key did provider with Lit Actions x PKP powered by Lit Protocol
+
+This a a DID provider which integrated Lit Actions x PKP powered by Lit Protocol for `did:key` using secp256k1. It does not support encryption / JWE. It's a fork from [symfoni/key-did-provider-secp256k1](https://github.com/symfoni/key-did-provider-secp256k1) and was designed to be used with [Ceramic Network](https://ceramic.network/).
 
 ## Installation
 
 ```
-npm install --save key-did-provider-secp256k1
+yarn add key-did-provider-secp256k1-with-lit
 ```
 
 ## Usage
 
 ```js
-import { Secp256k1Provider } from 'key-did-provider-ed25519'
-import KeyResolver from 'key-did-resolver'
+import { 
+    encodeDIDWithLit,  
+    Secp256k1ProviderWithLit 
+} from 'key-did-provider-secp256k1-with-lit';
+
+import { getResolver } from 'key-did-resolver'
 import { DID } from 'dids'
 
-const seed = new Uint8Array(...) //  32 bytes with high entropy
-const provider = new Secp256k1Provider(seed)
-const did = new DID({ provider, resolver: KeyResolver.getResolver() })
-await did.authenticate()
+const ceramic = new CeramicClient('https://ceramic-clay.3boxlabs.com')
 
-// log the DID
-console.log(did.id)
+const encodedDID = await encodeDIDWithLit();
 
-// create JWS
-const { jws, linkedBlock } = await did.createDagJWS({ hello: 'world' })
+const provider = new Secp256k1ProviderWithLit(encodedDID);
 
-// verify JWS
-await did.verifyJWS(jws)
+const did = new DID({ provider, resolver: getResolver() })
 
+// -- authenticate
+await did.authenticate();
+ceramic.did = did;
+console.log("DID:", did);
+
+// -- write to ceramic stream
+const doc = await TileDocument.create(ceramic, 'Hola hola ¿Cómo estás?');
+console.log("Doc/StreamID:", doc.id.toString());
+
+// -- read 
+var loadDoc = await TileDocument.load(ceramic, doc.id.toString());
+console.log("Specific doc:", loadDoc.content);
 ```
 
 ## License
