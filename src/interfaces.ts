@@ -7,22 +7,8 @@ import type {
 
 import { RPCConnection } from "rpc-utils";
   
-export declare type AuthSig = {
-    sig: string;
-    derivedVia: string;
-    signedMessage: string;
-    address: string;
-};
-
-export declare type LitActionParams = {
-    conditions: Array<Object>;
-    authSig: AuthSig;
-    chain: string;
-};
-
 export interface ContextWithLit {
-    did: string
-    jsParams: LitActionParams
+    did: string;
 }
 
 /**
@@ -47,12 +33,12 @@ export declare type DIDProviderMethodsWithLit = {
         params: CreateJWSParams;
         result: {
         jws: GeneralJWS;
-    };
+        };
     };
     did_decryptJWE: {
         params: DecryptJWEParams;
         result: {
-            cleartext: string;
+        cleartext: string;
         };
     };
 };
