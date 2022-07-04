@@ -18,10 +18,15 @@ const ec = new elliptic.ec("secp256k1");
 // - The JS code can be uploaded to IPFS and then you can just specify the IPFS id in Secp256k1ProviderWithLit instead of creating the code each time
 
 
+
 /**
- * Update to IPFS
+ * 
+ * Upload code to IPFS
+ * 
+ * @param { IPFSParam } param
+ * @returns 
  */
- export async function uploadToIPFS(param: IPFSParam) : Promise<IPFSData> {
+export async function uploadToIPFS(param: IPFSParam) : Promise<IPFSData> {
 
   log("uploadToIPFS");
 
@@ -33,8 +38,23 @@ const ec = new elliptic.ec("secp256k1");
     path: path,
     url: `https://ipfs.io/ipfs/${path}`,
   };
-  
+
   return data
+
+}
+
+/**
+ * Fetch the IPFS content and return as text
+ * @param { string } ipfsPath IPFS path  
+ * @returns { string } text
+ */
+export async function ipfsFetch(ipfsPath: string) {
+  
+  log("ipfsFetch()", ipfsPath);
+
+  const res = await fetch(`https://ipfs.io/ipfs/${ipfsPath}`);
+
+  return await res.text();
 
 }
 
