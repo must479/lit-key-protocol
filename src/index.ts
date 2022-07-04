@@ -72,6 +72,8 @@ export async function ipfsFetch(ipfsPath: string) {
  */
 const getPKPPublicKey = async () => {
 
+  log("[getPKPPublicKey]");
+
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
 
   const litNodeClient = new LitJsSdk.LitNodeClient({ litNetwork: "serrano" });
@@ -101,7 +103,8 @@ const getPKPPublicKey = async () => {
  * @returns { Object } signatures
  */
 const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
-  log("litActionSignAndGetSignature:", dataToSign);
+
+  log("[litActionSignAndGetSignature]:", dataToSign);
 
   //  -- validate
   if (dataToSign == undefined) throw Error("dataToSign cannot be empty");
@@ -171,6 +174,9 @@ export async function encodeDIDWithLit(): Promise<string> {
  *  @return   {Function}               a configured signer function `(data: string | Uint8Array): Promise<string>`
  */
 export function ES256KSignerWithLit(): Signer {
+
+  log("[ES256KSignerWithLit]");
+
   const recoverable = false;
 
   return async (data: string | Uint8Array): Promise<string> => {
@@ -207,6 +213,7 @@ const signWithLit = async (
   did: string,
   protectedHeader: Record<string, any> = {}
 ) => {
+
   log("[signWithLit] did:", did);
 
   const kid = `${did}#${did.split(":")[2]}`;
