@@ -47,4 +47,11 @@ export declare type DIDMethodNameWithLit = keyof DIDProviderMethodsWithLit;
 
 export declare type DIDProviderWithLit = RPCConnection<DIDProviderMethodsWithLit>;
   
+export interface IPFSData{
+    path: string,
+    url: string,
+}
 
+export interface IPFSParam {
+    code: string,
+}

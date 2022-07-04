@@ -6,9 +6,37 @@ import * as u8a from "uint8arrays";
 import elliptic from "elliptic";
 import LitJsSdk from "lit-js-sdk";
 import { toGeneralJWS, toJose, toStableObject, sha256, log } from "./util.js";
-import { ContextWithLit, DIDMethodNameWithLit, DIDProviderMethodsWithLit, DIDProviderWithLit } from "./interfaces.js";
+import { ContextWithLit, DIDMethodNameWithLit, DIDProviderMethodsWithLit, DIDProviderWithLit, IPFSData, IPFSParam } from "./interfaces.js";
+import * as IPFS from 'ipfs-core'
 
 const ec = new elliptic.ec("secp256k1");
+
+// TODO: we need to make it possible to pass a public key to use as well
+// - Hot it works right now (https://github.com/LIT-Protocol/js-serverless-function-test/blob/main/js-sdkTests/litConditions.js#L61)
+// - Anything you pass in to jsParams will be exposed globally to your lit action\
+// - Instead of using string interpolation to generate the JS code each time, the JS code can be static.
+// - The JS code can be uploaded to IPFS and then you can just specify the IPFS id in Secp256k1ProviderWithLit instead of creating the code each time
+
+
+/**
+ * Update to IPFS
+ */
+ export async function uploadToIPFS(param: IPFSParam) : Promise<IPFSData> {
+
+  log("uploadToIPFS");
+
+  const ipfs = await IPFS.create()
+
+  const { path } = await ipfs.add(param.code)
+
+  const data : IPFSData = {
+    path: path,
+    url: `https://ipfs.io/ipfs/${path}`,
+  };
+  
+  return data
+
+}
 
 /**
  * 
@@ -17,6 +45,7 @@ const ec = new elliptic.ec("secp256k1");
  * @returns { String } public key
  */
 const getPKPPublicKey = async () => {
+
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
 
   const litNodeClient = new LitJsSdk.LitNodeClient({ litNetwork: "serrano" });
