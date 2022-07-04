@@ -139,6 +139,12 @@ const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
 /**
  * Create a DID (decentralized identifier) by using the PKP public key
  * 
+ * @example
+ * ```typescript
+ * // -- get the DID (eg. did:key:xxxx )
+ * const encodedDID = await encodeDIDWithLit();
+ * ```
+ * 
  * @returns {String} did a decentralised identifier
  */
 export async function encodeDIDWithLit(): Promise<string> {
@@ -282,6 +288,23 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
 
 /**
  * secp256k1 provider using Lit Actions instead of passing in a private key
+ * @example
+ * ```typescript
+ * const encodedDID = await encodeDIDWithLit();
+ * 
+ * const provider = new Secp256k1ProviderWithLit(encodedDID)
+ * 
+ * const did = new DID({ provider, resolver: getResolver() })
+ * 
+ * await did.authenticate();
+ * 
+ * ceramic.did = did
+ * 
+ * // -- Write stream (docId = streamId)
+ * const doc = await TileDocument.create(ceramic, `${new Date().toLocaleTimeString()} Hola hola ¿Cómo estás?`);
+ * 
+ * console.log("doc:", doc);
+ * ```
  */
 export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
   _handle: SendRequestFunc<DIDProviderMethodsWithLit>;
