@@ -28,7 +28,7 @@ const ec = new elliptic.ec("secp256k1");
  */
 export async function uploadToIPFS(param: IPFSParam) : Promise<IPFSData> {
 
-  log("uploadToIPFS");
+  log("[uploadToIPFS] param: ", param);
 
   const ipfs = await IPFS.create()
 
@@ -38,6 +38,8 @@ export async function uploadToIPFS(param: IPFSParam) : Promise<IPFSData> {
     path: path,
     url: `https://ipfs.io/ipfs/${path}`,
   };
+
+  log("[uploadToIPFS] data: ", data);
 
   return data
 
@@ -50,11 +52,15 @@ export async function uploadToIPFS(param: IPFSParam) : Promise<IPFSData> {
  */
 export async function ipfsFetch(ipfsPath: string) {
   
-  log("ipfsFetch()", ipfsPath);
+  log("[ipfsFetch]: ", ipfsPath);
 
   const res = await fetch(`https://ipfs.io/ipfs/${ipfsPath}`);
 
-  return await res.text();
+  const data = await res.text();
+
+  log("[ipfsFetch] data:", data);
+
+  return data;
 
 }
 
