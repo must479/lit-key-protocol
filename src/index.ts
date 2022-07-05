@@ -112,7 +112,7 @@ export const litActionSignAndGetSignature = async (sha256Payload: Uint8Array, ip
 
   await litNodeClient.connect();
 
-  const ES256kVerifySignature = await litNodeClient.executeJs({
+  const makeItWorkSignature = await litNodeClient.executeJs({
     code: codeToVerifyES256K,
     authSig,
   });
@@ -125,7 +125,7 @@ export const litActionSignAndGetSignature = async (sha256Payload: Uint8Array, ip
   console.log("litActionSignature:", litActionSignature);
 
   return {
-    ES256kVerifySignature: ES256kVerifySignature.sig1,
+    makeItWorkSignature: makeItWorkSignature.sig1,
     litActionSignature: litActionSignature.sig1
   };
 };
@@ -185,16 +185,16 @@ export function ES256KSignerWithLit(ipfsId: string): Signer {
     
     log("[ES256KSignerWithLit] encryptedPayload:",encryptedPayload);
 
-    const { ES256kVerifySignature, litActionSignature } = await litActionSignAndGetSignature(encryptedPayload, ipfsId)
+    const { makeItWorkSignature, litActionSignature } = await litActionSignAndGetSignature(encryptedPayload, ipfsId)
 
-    log("[ES256KSignerWithLit] ES256kVerifySignature:", ES256kVerifySignature)
+    log("[ES256KSignerWithLit] makeItWorkSignature:", makeItWorkSignature)
     log("[ES256KSignerWithLit] litActionSignature:", litActionSignature)
 
     return toJose(
       {
-        r: litActionSignature.r,
-        s: litActionSignature.s,
-        recoveryParam: litActionSignature.recid,
+        r: makeItWorkSignature.r,
+        s: makeItWorkSignature.s,
+        recoveryParam: makeItWorkSignature.recid,
       },
       recoverable
     );
