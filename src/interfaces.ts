@@ -11,6 +11,9 @@ export interface ContextWithLit {
     did: string;
     ipfsId: string,
 }
+export interface encodeDIDWithLitParam {
+    pkpPublicKey: string;
+}
 
 /**
  * @deprecated Signers will be expected to return base64url `string` signatures.
