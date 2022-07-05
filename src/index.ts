@@ -6,7 +6,7 @@ import * as u8a from "uint8arrays";
 import elliptic from "elliptic";
 import LitJsSdk from "lit-js-sdk";
 import { toGeneralJWS, toJose, toStableObject, sha256, log } from "./util.js";
-import { ContextWithLit, DIDMethodNameWithLit, DIDProviderMethodsWithLit, DIDProviderWithLit, IPFSData, IPFSParam } from "./interfaces.js";
+import { ContextWithLit, DIDMethodNameWithLit, DIDProviderMethodsWithLit, DIDProviderWithLit, IPFSData } from "./interfaces.js";
 import * as IPFS from 'ipfs-core'
 
 const ec = new elliptic.ec("secp256k1");
@@ -18,21 +18,20 @@ const ec = new elliptic.ec("secp256k1");
 // - The JS code can be uploaded to IPFS and then you can just specify the IPFS id in Secp256k1ProviderWithLit instead of creating the code each time
 
 
-
 /**
  * 
  * Upload code to IPFS
  * 
- * @param { IPFSParam } param
+ * @param { string } code
  * @returns 
  */
-export async function uploadToIPFS(param: IPFSParam) : Promise<IPFSData> {
+export async function uploadToIPFS(code: string) : Promise<IPFSData> {
 
-  log("[uploadToIPFS] param: ", param);
+  log("[uploadToIPFS] param: ", code);
 
   const ipfs = await IPFS.create()
 
-  const { path } = await ipfs.add(param.code)
+  const { path } = await ipfs.add(code)
 
   const data : IPFSData = {
     path: path,
@@ -71,49 +70,28 @@ export async function ipfsFetch(ipfsPath: string) {
  * @returns { String } public key
  */
 const getPKPPublicKey = async () => {
-
-  log("[getPKPPublicKey]");
-
-  const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
-
-  const litNodeClient = new LitJsSdk.LitNodeClient({ litNetwork: "serrano" });
-
-  await litNodeClient.connect();
-
-  const signatures = await litNodeClient.executeJs({
-    code: `
-        const go = async () => {
-          const toSign = [0];
-          const sigShare = await LitActions.signEcdsa({ toSign, keyId: 1, sigName: "sig1" });
-      };
-      go();
-    `,
-    authSig,
-  });
-
-  return signatures.sig1.publicKey;
+  return '30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983';
 };
 
 /**
  * 
- * Prompt user to sign an auth message from a web3 wallet (eg. Metamask), connect the Lit client to 
- * ask the nodes to execute some JS that signs our data in `Uint8array` format
+ * Sign and get signature with Lit Action
  * 
- * @param dataToSign 
+ * @param sha256Payload 
  * @returns { Object } signatures
  */
-const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
+export const litActionSignAndGetSignature = async (sha256Payload: Uint8Array, ipfsId: string) => {
 
-  log("[litActionSignAndGetSignature]:", dataToSign);
+  log("[litActionSignAndGetSignature]:", sha256Payload);
 
   //  -- validate
-  if (dataToSign == undefined) throw Error("dataToSign cannot be empty");
+  if (sha256Payload == undefined) throw Error("sha256Payload cannot be empty");
 
-  const code = `
+  const codeToVerifyES256K = `
     const go = async () => {
 
-        // this is the string "${dataToSign}" for testing
-        const toSign = [${Array.from(dataToSign).toString()}];
+        // this is the string "${sha256Payload}" for testing
+        const toSign = [${Array.from(sha256Payload).toString()}];
         // this requests a signature share from the Lit Node
         // the signature share will be automatically returned in the HTTP response from the node
         const sigShare = await LitActions.signEcdsa({ toSign, keyId: 1, sigName: "sig1" });
@@ -122,18 +100,34 @@ const litActionSignAndGetSignature = async (dataToSign: Uint8Array) => {
     go();
   `;
 
+  log("[litActionSignAndGetSignature] ipfsId:", ipfsId)
+
+  const codeToRun = await ipfsFetch(ipfsId);
+
+  log("codeToRun:", codeToRun);
+  
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
 
   const litNodeClient = new LitJsSdk.LitNodeClient({ litNetwork: "serrano" });
 
   await litNodeClient.connect();
 
-  const signatures = await litNodeClient.executeJs({
-    code,
+  const ES256kVerifySignature = await litNodeClient.executeJs({
+    code: codeToVerifyES256K,
     authSig,
   });
 
-  return signatures;
+  const litActionSignature = await litNodeClient.executeJs({
+    code: codeToRun,
+    authSig,
+  })
+
+  console.log("litActionSignature:", litActionSignature);
+
+  return {
+    ES256kVerifySignature: ES256kVerifySignature.sig1,
+    litActionSignature: litActionSignature.sig1
+  };
 };
 
 /**
@@ -179,23 +173,28 @@ export async function encodeDIDWithLit(): Promise<string> {
  *
  *  @return   {Function}               a configured signer function `(data: string | Uint8Array): Promise<string>`
  */
-export function ES256KSignerWithLit(): Signer {
+export function ES256KSignerWithLit(ipfsId: string): Signer {
 
   log("[ES256KSignerWithLit]");
 
   const recoverable = false;
 
-  return async (data: string | Uint8Array): Promise<string> => {
+  return async (payload: string | Uint8Array): Promise<string> => {
     
-    log("ES256KSignerWithLit:", sha256(data));
+    const encryptedPayload = sha256(payload)
+    
+    log("[ES256KSignerWithLit] encryptedPayload:",encryptedPayload);
 
-    const signature = (await litActionSignAndGetSignature(sha256(data))).sig1;
+    const { ES256kVerifySignature, litActionSignature } = await litActionSignAndGetSignature(encryptedPayload, ipfsId)
+
+    log("[ES256KSignerWithLit] ES256kVerifySignature:", ES256kVerifySignature)
+    log("[ES256KSignerWithLit] litActionSignature:", litActionSignature)
 
     return toJose(
       {
-        r: signature.r,
-        s: signature.s,
-        recoveryParam: signature.recid,
+        r: litActionSignature.r,
+        s: litActionSignature.s,
+        recoveryParam: litActionSignature.recid,
       },
       recoverable
     );
@@ -216,19 +215,17 @@ export function ES256KSignerWithLit(): Signer {
  */
 const signWithLit = async (
   payload: Record<string, any> | string,
-  did: string,
+  contextParam: ContextWithLit,
   protectedHeader: Record<string, any> = {}
 ) => {
+
+  const did = contextParam.did;
 
   log("[signWithLit] did:", did);
 
   const kid = `${did}#${did.split(":")[2]}`;
 
   log("[signWithLit] kid:", kid);
-
-  const signer = ES256KSignerWithLit();
-
-  log("[signWithLit] signer:", signer);
 
   const header = toStableObject(
     Object.assign(protectedHeader, { kid, alg: "ES256K" })
@@ -240,7 +237,7 @@ const signWithLit = async (
 
   return createJWS(
     typeof payload === "string" ? payload : toStableObject(payload),
-    signer,
+    ES256KSignerWithLit(contextParam.ipfsId),
     header
   );
 };
@@ -250,16 +247,22 @@ const signWithLit = async (
  * Define DID methods that matches the "DIDProviderMethodsWithLit" type
  */
 const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLit> = {
-  did_authenticate: async ({ did }, params: AuthParams) => {
+  did_authenticate: async (contextParam: ContextWithLit, params: AuthParams) => {
+
+    const payload = {
+      did: contextParam.did,
+      aud: params.aud,
+      // nonce: "uSFvD9hnVXTWR+wAw9gG6w",
+      nonce: params.nonce,
+      paths: params.paths,
+      exp: Math.floor(Date.now() / 1000) + 600, // expires 10 min from now
+    };
+
+    log("[didMethodsWithLit] payload:", payload);
+
     const response = await signWithLit(
-      {
-        did,
-        aud: params.aud,
-        nonce: params.nonce,
-        paths: params.paths,
-        exp: Math.floor(Date.now() / 1000) + 600, // expires 10 min from now
-      },
-      did
+      payload,
+      contextParam
     );
 
     log("[didMethodsWithLit] response:", response);
@@ -270,10 +273,10 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
 
     return general;
   },
-  did_createJWS: async ({ did }, params: CreateJWSParams & { did: string }) => {
+  did_createJWS: async (contextParam: ContextWithLit, params: CreateJWSParams & { did: string }) => {
     const requestDid = params.did.split("#")[0];
-    if (requestDid !== did) throw new RPCError(4100, `Unknown DID: ${did}`);
-    const jws = await signWithLit(params.payload, did, params.protected);
+    if (requestDid !== contextParam.did) throw new RPCError(4100, `Unknown DID: ${contextParam.did}`);
+    const jws = await signWithLit(params.payload, contextParam, params.protected);
 
     log("[did_createJWS] jws:", jws);
 
@@ -288,34 +291,17 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
 
 /**
  * secp256k1 provider using Lit Actions instead of passing in a private key
- * @example
- * ```typescript
- * const encodedDID = await encodeDIDWithLit();
- * 
- * const provider = new Secp256k1ProviderWithLit(encodedDID)
- * 
- * const did = new DID({ provider, resolver: getResolver() })
- * 
- * await did.authenticate();
- * 
- * ceramic.did = did
- * 
- * // -- Write stream (docId = streamId)
- * const doc = await TileDocument.create(ceramic, `${new Date().toLocaleTimeString()} Hola hola ¿Cómo estás?`);
- * 
- * console.log("doc:", doc);
- * ```
  */
 export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
   _handle: SendRequestFunc<DIDProviderMethodsWithLit>;
 
-  constructor(did: string) {
+  constructor(contextParam: ContextWithLit) {
     const handler = createHandler<ContextWithLit, DIDProviderMethodsWithLit>(
       didMethodsWithLit
     );
     this._handle = async (msg) => {
       log("[Secp256k1ProviderWithLit] this._handle(msg):", msg);
-      const _handler = await handler({ did }, msg);
+      const _handler = await handler(contextParam, msg);
       return _handler;
     };
   }

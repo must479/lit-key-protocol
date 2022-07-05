@@ -9,6 +9,7 @@ import { RPCConnection } from "rpc-utils";
   
 export interface ContextWithLit {
     did: string;
+    ipfsId: string,
 }
 
 /**
@@ -50,8 +51,4 @@ export declare type DIDProviderWithLit = RPCConnection<DIDProviderMethodsWithLit
 export interface IPFSData{
     path: string,
     url: string,
-}
-
-export interface IPFSParam {
-    code: string,
 }
