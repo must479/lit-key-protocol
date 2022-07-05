@@ -187,8 +187,8 @@ export function ES256KSignerWithLit(ipfsId: string): Signer {
 
     const { makeItWorkSignature, litActionSignature } = await litActionSignAndGetSignature(encryptedPayload, ipfsId)
 
-    log("[ES256KSignerWithLit] makeItWorkSignature:", makeItWorkSignature)
-    log("[ES256KSignerWithLit] litActionSignature:", litActionSignature)
+    log("[ES256KSignerWithLit] This will work:", makeItWorkSignature)
+    log("[ES256KSignerWithLit] This won't work:", litActionSignature)
 
     return toJose(
       {
