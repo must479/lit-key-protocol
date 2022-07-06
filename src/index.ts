@@ -55,8 +55,7 @@ export async function uploadToIPFS(code: string) : Promise<IPFSData> {
  * Execute the Lit Action code and return a signature
  * 
  * @param { Uint8Array } sha256Payload a payload that is hashed using sha256() function 
- * @param { string } ipfsId a IPFS document path where you can access your static hosted file 
- * @param { string } pkpPublicKey your PKP public key
+ * @param { ContextWithLit } context
  * (eg. https://ipfs.io/ipfs/QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj)
  * 
  * @example
@@ -72,13 +71,12 @@ export async function uploadToIPFS(code: string) : Promise<IPFSData> {
  */
 export const litActionSignAndGetSignature = async (
     sha256Payload: Uint8Array, 
-    ipfsId: string, 
-    pkpPublicKey: string
+    context: ContextWithLit,
   ) : Promise<EcdsaSignature>=> {
 
   log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
 
-  log("[litActionSignAndGetSignature] ipfsId:", ipfsId)
+  log("[litActionSignAndGetSignature] ipfsId:", context.ipfsId)
 
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
 
@@ -89,11 +87,11 @@ export const litActionSignAndGetSignature = async (
   await litNodeClient.connect();
 
   const signature = await litNodeClient.executeJs({ 
-    ipfsId,
+    ipfsId: context.ipfsId,
     authSig,
     jsParams: {
       toSign: Array.from(sha256Payload),
-      keyId: pkpPublicKey,
+      keyId: context.pkpPublicKey,
       sigName: "sig1",
     },
   })
@@ -147,12 +145,11 @@ export async function encodeDIDWithLit(param: encodeDIDWithLitParam): Promise<st
  * Creates a configured signer function for signing data using the ES256K (secp256k1 + sha256) algorithm.
  * The signing function itself takes the data as a `Uint8Array` or `string` and returns a `base64Url`-encoded signature
  * 
- * @param { string } ipfsId a IPFS document path where you can access your static hosted file 
- * @param { string } did eg. did:key:zQ3shfdufQXuqrY4TYSGuk2W7VdDUzzFTSnTWSLA1FqrY4TYS
+ * @param { ContextWithLit } context
  * 
  * @return {Function} a configured signer function `(data: string | Uint8Array): Promise<string>`
  */
-export function ES256KSignerWithLit(ipfsId: string, pkpPublicKey: string): Signer {
+export function ES256KSignerWithLit(context: ContextWithLit): Signer {
 
   log("[ES256KSignerWithLit]");
 
@@ -164,7 +161,7 @@ export function ES256KSignerWithLit(ipfsId: string, pkpPublicKey: string): Signe
     
     log("[ES256KSignerWithLit] encryptedPayload:",encryptedPayload);
 
-    const signature = await litActionSignAndGetSignature(encryptedPayload, ipfsId, pkpPublicKey)
+    const signature = await litActionSignAndGetSignature(encryptedPayload, context)
 
     log("[ES256KSignerWithLit] signature:", signature)
 
@@ -191,10 +188,10 @@ export function ES256KSignerWithLit(ipfsId: string, pkpPublicKey: string): Signe
  */
 const signWithLit = async (
   payload: Record<string, any> | string,
-  contextParam: ContextWithLit,
-) => {
+  context: ContextWithLit,
+): Promise<string> => {
 
-  const did = contextParam.did;
+  const did = context.did;
 
   log("[signWithLit] did:", did);
 
@@ -214,7 +211,7 @@ const signWithLit = async (
 
   return createJWS(
     typeof payload === "string" ? payload : toStableObject(payload),
-    ES256KSignerWithLit(contextParam.ipfsId, contextParam.pkpPublicKey),
+    ES256KSignerWithLit(context),
     header
   );
 };
@@ -271,7 +268,7 @@ export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
 
   _handle: SendRequestFunc<DIDProviderMethodsWithLit>;
 
-  constructor(contextParam: ContextWithLit) {
+  constructor(context: ContextWithLit) {
 
     const handler = createHandler<ContextWithLit, DIDProviderMethodsWithLit>(didMethodsWithLit);
     
@@ -279,7 +276,7 @@ export class Secp256k1ProviderWithLit implements DIDProviderWithLit {
 
       log("[Secp256k1ProviderWithLit] this._handle(msg):", msg);
 
-      const _handler = await handler(contextParam, msg);
+      const _handler = await handler(context, msg);
 
       return _handler;
 
