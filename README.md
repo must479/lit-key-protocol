@@ -33,18 +33,15 @@ import { DID } from 'dids'
 
 const ceramic = new CeramicClient('https://ceramic-clay.3boxlabs.com')
 
-const PKP_PUBLIC_KEY = '30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983';
-
+// -- get your encode did with your PKP public key
 const encodedDID = await encodeDIDWithLit({
-    pkpPublicKey: PKP_PUBLIC_KEY
+    pkpPublicKey: "30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983",
 });
 
 // -- static lit action code hosted on https://ipfs.io/ipfs/QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj
-const ipfsId = 'QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj'
-
 const provider = new Secp256k1ProviderWithLit({
     did: encodedDID,
-    ipfsId: ipfsId,
+    ipfsId: "QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj",
     pkpPublicKey: "1",
 });
 
@@ -66,7 +63,7 @@ console.log("Specific doc:", loadDoc.content);
 
 ### To upload a new Lit Action code on IPFS
 
-```
+```js
 const code = `
     const go = async () => {
         const sigShare = await LitActions.signEcdsa({ toSign, keyId, sigName });
