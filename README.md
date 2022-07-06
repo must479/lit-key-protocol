@@ -33,9 +33,20 @@ import { DID } from 'dids'
 
 const ceramic = new CeramicClient('https://ceramic-clay.3boxlabs.com')
 
-const encodedDID = await encodeDIDWithLit();
+const PKP_PUBLIC_KEY = '30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983';
 
-const provider = new Secp256k1ProviderWithLit(encodedDID);
+const encodedDID = await encodeDIDWithLit({
+    pkpPublicKey: PKP_PUBLIC_KEY
+});
+
+// -- static lit action code hosted on https://ipfs.io/ipfs/QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj
+const ipfsId = 'QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj'
+
+const provider = new Secp256k1ProviderWithLit({
+    did: encodedDID,
+    ipfsId: ipfsId,
+    pkpPublicKey: "1",
+});
 
 const did = new DID({ provider, resolver: getResolver() })
 
@@ -51,6 +62,21 @@ console.log("Doc/StreamID:", doc.id.toString());
 // -- read a ceramic stream
 var loadDoc = await TileDocument.load(ceramic, doc.id.toString());
 console.log("Specific doc:", loadDoc.content);
+```
+
+### To upload a new Lit Action code on IPFS
+
+```
+const code = `
+    const go = async () => {
+        const sigShare = await LitActions.signEcdsa({ toSign, keyId, sigName });
+    };
+    go();
+`;
+
+const ipfsData  = await uploadToIPFS(code);
+
+LitActionsLogger.console("ipfsData:", ipfsData);
 ```
 
 ## License

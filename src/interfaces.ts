@@ -10,6 +10,7 @@ import { RPCConnection } from "rpc-utils";
 export interface ContextWithLit {
     did: string;
     ipfsId: string,
+    pkpPublicKey: string,
 }
 export interface encodeDIDWithLitParam {
     pkpPublicKey: string;
@@ -18,7 +19,7 @@ export interface encodeDIDWithLitParam {
 /**
  * @deprecated Signers will be expected to return base64url `string` signatures.
  */
- export interface EcdsaSignature {
+export interface EcdsaSignature {
     r: string
     s: string
     recoveryParam?: number | null

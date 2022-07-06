@@ -72,7 +72,17 @@ export function getInstanceType (value: any){
     return typeof value;
 };
 
+/**
+ * Pretty log file with prefix and color
+ * @param name 
+ * @param value 
+ * @param printObj 
+ * @returns 
+ */
 export function log(name: string, value: any = null, printObj: boolean = false){
+
+    const PREFIX = '[key-did-provider-secp256k1]';
+    const STYLE = '';
     
     if( value !== null){
         const instanceType = getInstanceType(value);
@@ -86,11 +96,11 @@ export function log(name: string, value: any = null, printObj: boolean = false){
         }
     
         if( printObj == false){
-            console.log(`%c[key-did-provider-secp256k1]: ${name}${instanceType != null ? `(${instanceType})` : ''} "${text}"`, "color: #FF79C6");
+            console.log(`%c${PREFIX}: ${name}${instanceType != null ? `(${instanceType})` : ''} "${text}"`, `${STYLE}`);
             return;
         }
     
-        console.log(`%c[key-did-provider-secp256k1]: ${name}${instanceType != null ? `(${instanceType})` : ''}`, "color: #FF79C6");
+        console.log(`%c${PREFIX}: ${name}${instanceType != null ? `(${instanceType})` : ''}`, `${STYLE}`);
     
         console.log(value);
 
