@@ -15,7 +15,19 @@ This is a `DID` provider which integrated Lit Actions x PKP powered by Lit Proto
 ## Installation
 
 ```
-yarn add key-did-provider-secp256k1-with-lit
+
+// -- using yarn
+// git clone yarn link this page
+yarn link
+
+// and use it in your project
+yarn link 'key-did-provider-secp256k1-with-lit'
+
+// -- using yalc
+yarn pub
+
+// use it in your project
+yalc add 'key-did-provider-secp256k1-with-lit'
 ```
 
 ## Usage
