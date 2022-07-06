@@ -38,10 +38,10 @@ const encodedDID = await encodeDIDWithLit({
     pkpPublicKey: "30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983",
 });
 
-// -- static lit action code hosted on https://ipfs.io/ipfs/QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj
+// -- static lit action code hosted on https://ipfs.io/ipfs/QmYrfiMf6TDuU3NiTbZANiELNBCyn2f66Zok3gEuzRTYmL
 const provider = new Secp256k1ProviderWithLit({
     did: encodedDID,
-    ipfsId: "QmQf55oeY5AXgHToWz3kZD8qQKzNv25fEdzyp5dNrYRUPj",
+    ipfsId: "QmYrfiMf6TDuU3NiTbZANiELNBCyn2f66Zok3gEuzRTYmL",
     pkpPublicKey: "30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983",
 });
 
