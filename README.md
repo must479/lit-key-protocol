@@ -73,7 +73,7 @@ const code = `
 
 const ipfsData  = await uploadToIPFS(code);
 
-LitActionsLogger.console("ipfsData:", ipfsData);
+console("ipfsData:", ipfsData);
 ```
 
 ## License
