@@ -91,6 +91,7 @@ export const litActionSignAndGetSignature = async (
     authSig,
     jsParams: {
       toSign: Array.from(sha256Payload),
+      // keyId: '30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983',
       keyId: context.pkpPublicKey,
       sigName: "sig1",
     },
@@ -165,8 +166,6 @@ export function ES256KSignerWithLit(context: ContextWithLit): Signer {
 
     log("[ES256KSignerWithLit] signature:", signature)
 
-    console.log(signature);
-
     return toJose(
       signature,
       recoverable
@@ -230,8 +229,6 @@ const didMethodsWithLit: HandlerMethods<ContextWithLit, DIDProviderMethodsWithLi
       paths: params.paths,
       exp: Math.floor(Date.now() / 1000) + 600, // expires 10 min from now
     };
-
-    console.log("NONCE:", params.nonce);
 
     log("[didMethodsWithLit] payload:", payload);
 
