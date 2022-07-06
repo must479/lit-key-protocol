@@ -70,7 +70,11 @@ export async function uploadToIPFS(code: string) : Promise<IPFSData> {
  * @returns { EcdsaSignature } signature
  * 
  */
-export const litActionSignAndGetSignature = async (sha256Payload: Uint8Array, ipfsId: string, pkpPublicKey: string) : Promise<EcdsaSignature>=> {
+export const litActionSignAndGetSignature = async (
+    sha256Payload: Uint8Array, 
+    ipfsId: string, 
+    pkpPublicKey: string
+  ) : Promise<EcdsaSignature>=> {
 
   log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
 
