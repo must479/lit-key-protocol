@@ -1,4 +1,4 @@
-import { encodeDIDWithLit } from '../dist/index.js';
+import { encodeDIDWithLit, Secp256k1ProviderWithLit } from '../dist/index.js';
 import { assert } from "console";
 import { expect } from 'chai';
 
@@ -34,3 +34,7 @@ describe('encodeDIDWithLit', () => {
         expect(encodedDID).to.equal('did:key:zQ3shfdufQXuqrY4TYSGuk2W7VdDUzzFTSnTWSLA1FhmhdMce');
     })
 })
+
+// describe('Secp256k1ProviderWithLit', () => {
+    
+// });
