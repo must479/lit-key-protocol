@@ -16,7 +16,6 @@ import {
   DIDMethodNameWithLit,
   DIDProviderMethodsWithLit,
   DIDProviderWithLit,
-  IPFSData,
   encodeDIDWithLitParam,
   EcdsaSignature,
 } from "./interfaces.js";
