@@ -63,7 +63,6 @@
     "elliptic": "^6.5.4",
     "fast-json-stable-stringify": "^2.1.0",
     "global": "^4.4.0",
-    "ipfs-core": "^0.15.4",
     "lit-js-sdk": "^1.2.1",
     "rpc-utils": "^0.6.2",
     "uint8arrays": "^3.0.0",
