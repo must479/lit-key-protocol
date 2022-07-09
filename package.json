@@ -1,6 +1,6 @@
 {
   "name": "key-did-provider-secp256k1-with-lit",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "secp256k1 key did provider",
   "repository": {
     "type": "git",
@@ -50,7 +50,6 @@
     "babel-jest": "^27.5.1",
     "chai": "^4.3.6",
     "eslint": "^8.13.0",
-    "ipfs-core": "^0.15.4",
     "jest": "^27.5.1",
     "mocha": "^10.0.0",
     "typedoc": "^0.23.5",
@@ -64,6 +63,7 @@
     "elliptic": "^6.5.4",
     "fast-json-stable-stringify": "^2.1.0",
     "global": "^4.4.0",
+    "ipfs-core": "^0.15.4",
     "lit-js-sdk": "^1.2.1",
     "rpc-utils": "^0.6.2",
     "uint8arrays": "^3.0.0",
