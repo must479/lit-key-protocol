@@ -6,10 +6,18 @@ import type {
 } from "dids";
 
 import { RPCConnection } from "rpc-utils";
-  
+
+export interface ExecuteJS{
+    code?: string
+    ipfsId?: string
+    authSig: Object
+    jsParams: Object
+}
+
 export interface ContextWithLit {
-    did: string;
-    ipfsId: string,
+    did: string
+    ipfsId?: string,
+    litCode?: string,
     pkpPublicKey: string,
 }
 export interface encodeDIDWithLitParam {

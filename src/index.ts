@@ -18,6 +18,7 @@ import {
   DIDProviderWithLit,
   encodeDIDWithLitParam,
   EcdsaSignature,
+  ExecuteJS
 } from "./interfaces.js";
 // import * as IPFS from 'ipfs-core'
 
@@ -85,9 +86,8 @@ export const litActionSignAndGetSignature = async (
   sha256Payload: Uint8Array,
   context: ContextWithLit
 ): Promise<EcdsaSignature> => {
-  log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
 
-  log("[litActionSignAndGetSignature] ipfsId:", context.ipfsId);
+  log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
 
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
 
@@ -97,16 +97,31 @@ export const litActionSignAndGetSignature = async (
 
   await litNodeClient.connect();
 
-  const signature = await litNodeClient.executeJs({
-    ipfsId: context.ipfsId,
-    authSig,
-    jsParams: {
-      toSign: Array.from(sha256Payload),
-      // keyId: '30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983',
-      keyId: context.pkpPublicKey,
-      sigName: "sig1",
-    },
-  });
+  log("[litActionSignAndGetSignature] ipfsId:", context.ipfsId);
+
+  const jsParams = {
+    toSign: Array.from(sha256Payload),
+    keyId: context.pkpPublicKey,
+    sigName: "sig1",
+  };
+
+  let executeOptions : ExecuteJS;
+  
+  if(context?.ipfsId === undefined || ! context?.ipfsId ){
+    executeOptions = {
+      code: context.litCode,
+      authSig,
+      jsParams,
+    }
+  }else{
+    executeOptions = {
+      ipfsId: context.ipfsId,
+      authSig,
+      jsParams,
+    }
+  }
+
+  const signature = await litNodeClient.executeJs(executeOptions);
 
   log("[litActionSignAndGetSignature] signature:", signature);
 
