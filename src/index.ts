@@ -170,6 +170,42 @@ export async function encodeDIDWithLit(
   return did;
 }
 
+export async function decodeDIDWithLit(
+  encodedDID: string
+): Promise<string> {
+
+    // -- validate
+    const arr = encodedDID?.split(':');
+
+    if(arr[0] != 'did') throw Error('string should start with did:');
+    if(arr[1] != 'key') throw Error('string should start with did:key');
+    if(arr[2].charAt(0) !== 'z') throw Error('string should start with did:key:z');
+
+    const str = arr[2].substring(1);;
+
+    log("[decodeDIDWithLit] str:", str);
+
+    const bytes = u8a.fromString(str, "base58btc");
+
+    const originalBytes = new Uint8Array(bytes.length - 2);
+
+    bytes.forEach((_, i) => {
+        originalBytes[i] = bytes[i + 2];
+    });
+    
+    log("[decodeDIDWithLit] originalBytes:", originalBytes);
+
+    const pubPoint = ec.keyFromPublic(originalBytes).getPublic();
+    
+    let pubKey = pubPoint.encode('hex', true);
+
+    pubKey = pubKey.charAt(0) == '0' ? pubKey.substring(1) : pubKey;
+
+    log("[decodeDIDWithLit] pubKey:", pubKey);
+    
+    return pubKey;
+}
+
 /**
  *
  * Creates a configured signer function for signing data using the ES256K (secp256k1 + sha256) algorithm.
