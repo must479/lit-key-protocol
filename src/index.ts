@@ -17,8 +17,7 @@ import {
   DIDProviderMethodsWithLit,
   DIDProviderWithLit,
   encodeDIDWithLitParam,
-  EcdsaSignature,
-  ExecuteJS
+  EcdsaSignature
 } from "./interfaces.js";
 // import * as IPFS from 'ipfs-core'
 
@@ -105,20 +104,11 @@ export const litActionSignAndGetSignature = async (
     sigName: "sig1",
   };
 
-  let executeOptions : ExecuteJS;
-  
-  if(context?.ipfsId === undefined || ! context?.ipfsId ){
-    executeOptions = {
-      code: context.litCode,
-      authSig,
-      jsParams,
-    }
-  }else{
-    executeOptions = {
-      ipfsId: context.ipfsId,
-      authSig,
-      jsParams,
-    }
+  const executeOptions = {
+    ...(context.ipfsId === undefined || ! context.ipfsId) && {code: context.litCode},
+    ...(context.litCode === undefined || ! context.litCode) && {ipfsId: context.ipfsId},
+    authSig,
+    jsParams,
   }
 
   const signature = await litNodeClient.executeJs(executeOptions);
