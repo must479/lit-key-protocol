@@ -170,9 +170,9 @@ export async function encodeDIDWithLit(
   return did;
 }
 
-export async function decodeDIDWithLit(
+export function decodeDIDWithLit(
   encodedDID: string
-): Promise<string> {
+): string {
 
     // -- validate
     const arr = encodedDID?.split(':');
