@@ -241,8 +241,8 @@ export function ES256KSignerWithLit(context: ContextWithLit): Signer {
  * Signing with Lit Actions which is signed by the lit nodes
  *
  * @param payload
- * @param { string } did eg. did:key:zQ3shfdufQXuqrY4TYSGuk2W7VdDUzzFTSnTWSLA1FqrY4TYS
- * @param { string } pkpPublicKey your PKP public key
+ * @param { Record<string, any> | string } payload
+ * @param { ContextWithLit } context
  *
  * @returns {Promise<string>} a JWS string
  *
