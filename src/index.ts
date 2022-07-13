@@ -160,6 +160,13 @@ export async function encodeDIDWithLit(
   return did;
 }
 
+/**
+ * 
+ * Decode encodedDID and return the PKP public key in a compressed form
+ * 
+ * @param encodedDID 
+ * @returns { string } PKP Public Key in compressed form
+ */
 export function decodeDIDWithLit(
   encodedDID: string
 ): string {

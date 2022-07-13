@@ -107,6 +107,6 @@ export function log(name: string, value: any = null, printObj: boolean = false){
         return;
     }
 
-    console.log(`%c[key-did-provider-secp256k1]: ${name}$`);
+    console.log(`[key-did-provider-secp256k1]: ${name}$`);
 
 }

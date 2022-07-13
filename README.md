@@ -6,7 +6,7 @@ This is a `DID` provider which integrated Lit Actions x PKP powered by Lit Proto
 
 - Instead of manually providing a `PUBLIC_KEY` to get the `DID` (decentralised identifier), this SDK gets the `PUBLIC_KEY` from the `PKP` NFT
 
-- The `DID` tha we got is then passed into a resolver, which would allow us to run methods such as `did.authenticate()`.
+- The `DID` that we got is then passed into a resolver, which would allow us to run methods such as `did.authenticate()`.
 
 - To authenticate, instead of providing a `PRIVATE_KEY` to sign a message to verify the signature from the signed message matches the corresponding `PUBLIC_KEY`, we will ask the Lit nodes, who hold the `PRIVATE_KEY` collectively of the `PKP` NFT, to execute some static Javascript code that is hosted on IPFS and use the output signature to verify.
 
