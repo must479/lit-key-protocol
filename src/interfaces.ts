@@ -18,7 +18,6 @@ export interface ContextWithLit {
     did: string
     ipfsId?: string,
     litCode?: string,
-    pkpPublicKey: string,
 }
 export interface encodeDIDWithLitParam {
     pkpPublicKey: string;

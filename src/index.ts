@@ -101,7 +101,7 @@ export const litActionSignAndGetSignature = async (
 
   const jsParams = {
     toSign: Array.from(sha256Payload),
-    keyId: context.pkpPublicKey,
+    keyId: decodeDIDWithLit(context.did),
     sigName: "sig1",
   };
 
