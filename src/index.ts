@@ -19,48 +19,8 @@ import {
   encodeDIDWithLitParam,
   EcdsaSignature
 } from "./interfaces.js";
-// import * as IPFS from 'ipfs-core'
 
 const ec = new elliptic.ec("secp256k1");
-
-// /**
-//  *
-//  * Upload code to IPFS
-//  *
-//  * @example
-//  * ```
-//   const code = `
-//       const go = async () => {
-//           const sigShare = await LitActions.signEcdsa({ toSign, keyId, sigName });
-//       };
-//       go();
-//   `;
-
-//   const ipfsData  = await uploadToIPFS(code);
-//   console.log("ipfsData:", ipfsData);
-//   ```
-//  *
-//  * @param { string } code
-//  * @returns { IPFSData }
-//  */
-// export async function uploadToIPFS(code: string) : Promise<IPFSData> {
-
-//   log("[uploadToIPFS] param: ", code);
-
-//   const ipfs = await IPFS.create()
-
-//   const { path } = await ipfs.add(code)
-
-//   const data : IPFSData = {
-//     path: path,
-//     url: `https://ipfs.io/ipfs/${path}`,
-//   };
-
-//   log("[uploadToIPFS] data: ", data);
-
-//   return data
-
-// }
 
 /**
  *
