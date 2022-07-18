@@ -36,9 +36,7 @@ const ceramic = new CeramicClient("https://ceramic-clay.3boxlabs.com");
 const PKP_PUBLIC_KEY = "30eceb963993d467ca197f3fd9fe3073b8b224ac2c9068d9a9caafcd5e20cf983";
 
 // -- get your encode did with your PKP public key
-const encodedDID = await encodeDIDWithLit({
-  pkpPublicKey: PKP_PUBLIC_KEY
-});
+const encodedDID = await encodeDIDWithLit(PKP_PUBLIC_KEY);
 
 // -- static lit action code hosted on https://ipfs.io/ipfs/QmYrfiMf6TDuU3NiTbZANiELNBCyn2f66Zok3gEuzRTYmL
 const provider = new Secp256k1ProviderWithLit({

@@ -16,7 +16,6 @@ import {
   DIDMethodNameWithLit,
   DIDProviderMethodsWithLit,
   DIDProviderWithLit,
-  encodeDIDWithLitParam,
   EcdsaSignature
 } from "./interfaces.js";
 
@@ -90,14 +89,13 @@ export const litActionSignAndGetSignature = async (
  * // -- get the DID (eg. did:key:xxxx )
  * const encodedDID = await encodeDIDWithLit();
  * ```
- *
+ * @param { string } pkpPublicKey
  * @returns {String} did a decentralised identifier
  */
 export async function encodeDIDWithLit(
-  param: encodeDIDWithLitParam
+  PKP_PUBLIC_KEY: string
 ): Promise<string> {
   // -- prepare
-  const PKP_PUBLIC_KEY = param.pkpPublicKey;
 
   log("[encodeDIDWithLit] PKP_PUBLIC_KEY:", PKP_PUBLIC_KEY);
 
