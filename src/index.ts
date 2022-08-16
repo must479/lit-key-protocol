@@ -17,7 +17,7 @@ import {
   DIDProviderMethodsWithLit,
   DIDProviderWithLit,
   encodeDIDWithLitParam,
-  EcdsaSignature
+  EcdsaSignature,
 } from "./interfaces.js";
 // import * as IPFS from 'ipfs-core'
 
@@ -85,7 +85,6 @@ export const litActionSignAndGetSignature = async (
   sha256Payload: Uint8Array,
   context: ContextWithLit
 ): Promise<EcdsaSignature> => {
-
   log("[litActionSignAndGetSignature] sha256Payload: ", sha256Payload);
 
   const authSig = await LitJsSdk.checkAndSignAuthMessage({ chain: "ethereum" });
@@ -100,16 +99,20 @@ export const litActionSignAndGetSignature = async (
 
   const jsParams = {
     toSign: Array.from(sha256Payload),
-    keyId: decodeDIDWithLit(context.did),
+    publicKey: decodeDIDWithLit(context.did),
     sigName: "sig1",
   };
 
   const executeOptions = {
-    ...(context.ipfsId === undefined || ! context.ipfsId) && {code: context.litCode},
-    ...(context.litCode === undefined || ! context.litCode) && {ipfsId: context.ipfsId},
+    ...((context.ipfsId === undefined || !context.ipfsId) && {
+      code: context.litCode,
+    }),
+    ...((context.litCode === undefined || !context.litCode) && {
+      ipfsId: context.ipfsId,
+    }),
     authSig,
     jsParams,
-  }
+  };
 
   const signature = await litNodeClient.executeJs(executeOptions);
 
@@ -161,46 +164,44 @@ export async function encodeDIDWithLit(
 }
 
 /**
- * 
+ *
  * Decode encodedDID and return the PKP public key in a compressed form
- * 
- * @param encodedDID 
+ *
+ * @param encodedDID
  * @returns { string } PKP Public Key in compressed form
  */
-export function decodeDIDWithLit(
-  encodedDID: string
-): string {
+export function decodeDIDWithLit(encodedDID: string): string {
+  // -- validate
+  const arr = encodedDID?.split(":");
 
-    // -- validate
-    const arr = encodedDID?.split(':');
+  if (arr[0] != "did") throw Error("string should start with did:");
+  if (arr[1] != "key") throw Error("string should start with did:key");
+  if (arr[2].charAt(0) !== "z")
+    throw Error("string should start with did:key:z");
 
-    if(arr[0] != 'did') throw Error('string should start with did:');
-    if(arr[1] != 'key') throw Error('string should start with did:key');
-    if(arr[2].charAt(0) !== 'z') throw Error('string should start with did:key:z');
+  const str = arr[2].substring(1);
 
-    const str = arr[2].substring(1);;
+  log("[decodeDIDWithLit] str:", str);
 
-    log("[decodeDIDWithLit] str:", str);
+  const bytes = u8a.fromString(str, "base58btc");
 
-    const bytes = u8a.fromString(str, "base58btc");
+  const originalBytes = new Uint8Array(bytes.length - 2);
 
-    const originalBytes = new Uint8Array(bytes.length - 2);
+  bytes.forEach((_, i) => {
+    originalBytes[i] = bytes[i + 2];
+  });
 
-    bytes.forEach((_, i) => {
-        originalBytes[i] = bytes[i + 2];
-    });
-    
-    log("[decodeDIDWithLit] originalBytes:", originalBytes);
+  log("[decodeDIDWithLit] originalBytes:", originalBytes);
 
-    const pubPoint = ec.keyFromPublic(originalBytes).getPublic();
-    
-    let pubKey = pubPoint.encode('hex', true);
+  const pubPoint = ec.keyFromPublic(originalBytes).getPublic();
 
-    pubKey = pubKey.charAt(0) == '0' ? pubKey.substring(1) : pubKey;
+  let pubKey = pubPoint.encode("hex", true);
 
-    log("[decodeDIDWithLit] pubKey:", pubKey);
-    
-    return pubKey;
+  pubKey = pubKey.charAt(0) == "0" ? pubKey.substring(1) : pubKey;
+
+  log("[decodeDIDWithLit] pubKey:", pubKey);
+
+  return pubKey;
 }
 
 /**
