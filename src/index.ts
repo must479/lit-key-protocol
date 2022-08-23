@@ -114,14 +114,14 @@ export const litActionSignAndGetSignature = async (
     jsParams,
   };
 
-  const signature = await litNodeClient.executeJs(executeOptions);
+  const response = await litNodeClient.executeJs(executeOptions);
 
-  log("[litActionSignAndGetSignature] signature:", signature);
+  log("[litActionSignAndGetSignature] response:", response);
 
   return {
-    r: signature.sig1.r,
-    s: signature.sig1.s,
-    recoveryParam: signature.sig1.recid,
+    r: response.signatures.sig1.r,
+    s: response.signatures.sig1.s,
+    recoveryParam: response.signatures.sig1.recid,
   };
 };
 
