@@ -63,6 +63,8 @@ export const litActionSignAndGetSignature = async (
     sigName: "sig1",
   };
 
+  log("[litActionSignAndGetSignature] jsParams:", jsParams);
+
   const executeOptions = {
     ...(context.ipfsId === undefined || ! context.ipfsId) && {code: context.litCode},
     ...(context.litCode === undefined || ! context.litCode) && {ipfsId: context.ipfsId},
@@ -97,10 +99,12 @@ export async function encodeDIDWithLit(
 ): Promise<string> {
   // -- prepare
 
-  log("[encodeDIDWithLit] PKP_PUBLIC_KEY:", PKP_PUBLIC_KEY);
+  const pkpPubKey = PKP_PUBLIC_KEY.replace('0x', '')
+
+  log("[encodeDIDWithLit] pkpPubKey:", pkpPubKey);
 
   const pubBytes = ec
-    .keyFromPublic(PKP_PUBLIC_KEY, "hex")
+    .keyFromPublic(pkpPubKey, "hex")
     .getPublic(true, "array");
 
   log("[encodeDIDWithLit] pubBytes:", pubBytes);
@@ -120,14 +124,16 @@ export async function encodeDIDWithLit(
 
 /**
  * 
- * Decode encodedDID and return the PKP public key in a compressed form
+ * Decode encodedDID and return the PKP public key in a uncompressed form
  * 
  * @param encodedDID 
- * @returns { string } PKP Public Key in compressed form
+ * @returns { string } PKP Public Key in uncompressed form
  */
 export function decodeDIDWithLit(
   encodedDID: string
 ): string {
+
+    log("[decodeDIDWithLit] encodedDID:", encodedDID);
 
     // -- validate
     const arr = encodedDID?.split(':');
@@ -152,13 +158,13 @@ export function decodeDIDWithLit(
 
     const pubPoint = ec.keyFromPublic(originalBytes).getPublic();
     
-    let pubKey = pubPoint.encode('hex', true);
+    let pubKey = pubPoint.encode('hex', false);
 
     pubKey = pubKey.charAt(0) == '0' ? pubKey.substring(1) : pubKey;
 
     log("[decodeDIDWithLit] pubKey:", pubKey);
     
-    return pubKey;
+    return '0x0' + pubKey;
 }
 
 /**
