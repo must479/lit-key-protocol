@@ -82,7 +82,7 @@ export function getInstanceType (value: any){
 export function log(name: string, value: any = null, printObj: boolean = false){
 
     const PREFIX = '[key-did-provider-secp256k1]';
-    const STYLE = '';
+    const STYLE = 'color: #5FA227';
     
     if( value !== null){
         const instanceType = getInstanceType(value);

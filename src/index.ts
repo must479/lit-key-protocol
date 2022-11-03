@@ -72,9 +72,11 @@ export const litActionSignAndGetSignature = async (
     jsParams,
   }
 
-  const signature = await litNodeClient.executeJs(executeOptions);
+  const res = await litNodeClient.executeJs(executeOptions);
 
-  log("[litActionSignAndGetSignature] signature:", signature);
+  log("[litActionSignAndGetSignature] res.signatures:", res.signatures);
+
+  const signature = res.signatures;
 
   return {
     r: signature.sig1.r,
